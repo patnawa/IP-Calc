@@ -1,5 +1,7 @@
 package com.example.ipcalculator.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -11,12 +13,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
 fun AboutScreen(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -49,10 +55,20 @@ fun AboutScreen(modifier: Modifier = Modifier) {
         )
 
         Text(
-            text = "Version 1.0.0 (Build 1)",
+            text = "Version 2.0.0 (Build 2)",
             fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        Button(
+            onClick = {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/patnawa/IP-Calc"))
+                context.startActivity(intent)
+            },
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text("Visit GitHub Repository")
+        }
 
         ElevatedCard(
             modifier = Modifier.fillMaxWidth(),
@@ -72,6 +88,24 @@ fun AboutScreen(modifier: Modifier = Modifier) {
                 HorizontalDivider()
 
                 ChangelogItem(
+                    version = "v2.0.0 (2026-06-30)",
+                    changes = listOf(
+                        "Interactive Subnetting Quiz: CCNA/Network+ practice mode with score/streak tracking and detailed explanations.",
+                        "Visual IP Allocation Map: Visual progress bar in VLSM displaying allocated vs unallocated space.",
+                        "IPv6 EUI-64 Generator: Converts MAC Address and Prefix to EUI-64 address with step-by-step logic.",
+                        "MAC Vendor OUI Lookup: Resolves manufacturer details and converts MAC format representations.",
+                        "Searchable TCP/UDP Common Ports: Interactive chip-filterable ports cheat sheet.",
+                        "Searchable CIDR Prefix Chart: Scrollable cheat sheet for /0 to /32 ranges.",
+                        "Subnet Containment Checker: Verifies IP address subnet boundaries.",
+                        "Side-by-side Subnet Comparison: Dual comparison card showing overlap and containment status.",
+                        "Improved layout rotation: All states saved in rememberSaveable.",
+                        "Critical bugs fixed: IPv6 compression :: edge cases, validation logic, and VLSM integer overflow."
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                ChangelogItem(
                     version = "v1.0.0 (2026-06-28)",
                     changes = listOf(
                         "Initial Release of the complete IP Suite.",
@@ -87,12 +121,12 @@ fun AboutScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        // About developers
         Text(
             text = "Developed by AI Coding Assistant Antigravity",
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier.padding(top = 16.dp),
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -100,7 +134,7 @@ fun AboutScreen(modifier: Modifier = Modifier) {
 @Composable
 fun ChangelogItem(version: String, changes: List<String>) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.padding(vertical = 4.dp)
     ) {
         Text(
@@ -111,14 +145,14 @@ fun ChangelogItem(version: String, changes: List<String>) {
         )
         changes.forEach { change ->
             Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(text = "•", color = MaterialTheme.colorScheme.primary)
+                Text(text = "•", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
                     text = change,
                     fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

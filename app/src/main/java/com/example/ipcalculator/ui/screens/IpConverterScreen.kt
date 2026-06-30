@@ -1,20 +1,25 @@
 package com.example.ipcalculator.ui.screens
 
-import android.widget.Toast
+import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.ipcalculator.IPCalculator
+import com.example.ipcalculator.ui.components.ActionButtonRow
+import com.example.ipcalculator.ui.components.GlowingCard
+import com.example.ipcalculator.ui.components.ResultRowWithCopy
+import com.example.ipcalculator.ui.components.SectionHeader
 
 enum class IpFormat {
     DOT_DECIMAL,
@@ -25,13 +30,12 @@ enum class IpFormat {
 
 @Composable
 fun IpConverterScreen(modifier: Modifier = Modifier) {
-    var inputFormat by remember { mutableStateOf(IpFormat.DOT_DECIMAL) }
-    var rawInput by remember { mutableStateOf("192.168.1.1") }
+    var inputFormat by rememberSaveable { mutableStateOf(IpFormat.DOT_DECIMAL) }
+    var rawInput by rememberSaveable { mutableStateOf("192.168.1.1") }
 
-    val clipboardManager = LocalClipboardManager.current
-    val context = LocalContext.current
+    val scrollState = rememberScrollState()
 
-    // Convert values reactively
+    // Conversions calculated reactively
     var dotDecimalOut = ""
     var binaryOut = ""
     var hexOut = ""
@@ -101,148 +105,182 @@ fun IpConverterScreen(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Selector for input format
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Source Input Format",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                // 2x2 Grid of Format Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FormatSelectorButton(
+                        text = "Dot-Decimal",
+                        selected = inputFormat == IpFormat.DOT_DECIMAL,
+                        onClick = {
+                            if (isValid) rawInput = dotDecimalOut
+                            inputFormat = IpFormat.DOT_DECIMAL
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FormatSelectorButton(
+                        text = "Binary",
+                        selected = inputFormat == IpFormat.BINARY,
+                        onClick = {
+                            if (isValid) rawInput = binaryOut
+                            inputFormat = IpFormat.BINARY
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FormatSelectorButton(
+                        text = "Hexadecimal",
+                        selected = inputFormat == IpFormat.HEXADECIMAL,
+                        onClick = {
+                            if (isValid) rawInput = hexOut.replace("0x", "")
+                            inputFormat = IpFormat.HEXADECIMAL
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FormatSelectorButton(
+                        text = "Decimal Int",
+                        selected = inputFormat == IpFormat.DECIMAL_INT,
+                        onClick = {
+                            if (isValid) rawInput = decimalIntOut
+                            inputFormat = IpFormat.DECIMAL_INT
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+
+        // Input Card
         ElevatedCard(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Input Format Selection",
+                    text = "Enter IP Address Value",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                // Grid or column of options
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FormatButton(
-                            label = "Dot-Decimal",
-                            selected = inputFormat == IpFormat.DOT_DECIMAL,
-                            onClick = {
-                                inputFormat = IpFormat.DOT_DECIMAL
-                                rawInput = "192.168.1.1"
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                        FormatButton(
-                            label = "Binary",
-                            selected = inputFormat == IpFormat.BINARY,
-                            onClick = {
-                                inputFormat = IpFormat.BINARY
-                                rawInput = "11000000101010000000000100000001"
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FormatButton(
-                            label = "Hexadecimal",
-                            selected = inputFormat == IpFormat.HEXADECIMAL,
-                            onClick = {
-                                inputFormat = IpFormat.HEXADECIMAL
-                                rawInput = "C0A80101"
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                        FormatButton(
-                            label = "Decimal Int",
-                            selected = inputFormat == IpFormat.DECIMAL_INT,
-                            onClick = {
-                                inputFormat = IpFormat.DECIMAL_INT
-                                rawInput = "3232235777"
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
-                HorizontalDivider()
-
                 OutlinedTextField(
                     value = rawInput,
                     onValueChange = { rawInput = it },
-                    label = { Text("Input Value") },
+                    placeholder = {
+                        Text(
+                            when (inputFormat) {
+                                IpFormat.DOT_DECIMAL -> "e.g. 192.168.1.1"
+                                IpFormat.BINARY -> "e.g. 1100000010101000..."
+                                IpFormat.HEXADECIMAL -> "e.g. C0A80101"
+                                IpFormat.DECIMAL_INT -> "e.g. 3232235777"
+                            }
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = when (inputFormat) {
+                            IpFormat.DOT_DECIMAL -> KeyboardType.Phone
+                            IpFormat.BINARY -> KeyboardType.Number
+                            IpFormat.HEXADECIMAL -> KeyboardType.Text
                             IpFormat.DECIMAL_INT -> KeyboardType.Number
-                            else -> KeyboardType.Text
                         }
                     )
                 )
 
-                if (trimmedInput.isNotEmpty() && !isValid) {
+                if (rawInput.isNotEmpty() && !isValid) {
                     Text(
                         text = errorMsg,
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
         }
 
-        if (isValid && trimmedInput.isNotEmpty()) {
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(
-                        text = "Conversion Results",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+        // Results Card
+        AnimatedVisibility(
+            visible = isValid,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            GlowingCard {
+                SectionHeader(title = "Converted IP Formats")
 
-                    HorizontalDivider()
+                ResultRowWithCopy("Dot-Decimal Format", dotDecimalOut)
+                ResultRowWithCopy("Binary Representation", formatBinaryOutput(binaryOut))
+                ResultRowWithCopy("Hexadecimal Format", hexOut.uppercase())
+                ResultRowWithCopy("Decimal Integer Format", decimalIntOut)
 
-                    ResultRow("Dot-Decimal Representation", dotDecimalOut, clipboardManager)
-                    ResultRow("Binary Representation", formatBinaryOutput(binaryOut), clipboardManager)
-                    ResultRow("Hexadecimal Representation", hexOut, clipboardManager)
-                    ResultRow("Decimal Integer Representation", decimalIntOut, clipboardManager)
-                }
+                val shareText = """
+                    IP Format Conversion Report:
+                    - Dot-Decimal: $dotDecimalOut
+                    - Binary: ${formatBinaryOutput(binaryOut)}
+                    - Hex: ${hexOut.uppercase()}
+                    - Dec Integer: $decimalIntOut
+                """.trimIndent()
+
+                ActionButtonRow(allResultsText = shareText)
             }
         }
     }
 }
 
 @Composable
-fun FormatButton(
-    label: String,
+fun FormatSelectorButton(
+    text: String,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier,
         colors = ButtonDefaults.buttonColors(
             containerColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
-        )
+        ),
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp)
     ) {
         Text(
-            text = label,
+            text = text,
             color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.bodyMedium
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold
         )
     }
 }
 
-// Format 32-bit binary into 4 octets separated by dots for readability
-fun formatBinaryOutput(rawBin: String): String {
-    if (rawBin.length != 32) return rawBin
-    return "${rawBin.substring(0, 8)}.${rawBin.substring(8, 16)}.${rawBin.substring(16, 24)}.${rawBin.substring(24, 32)}"
+fun formatBinaryOutput(binary: String): String {
+    if (binary.length != 32) return binary
+    return "${binary.substring(0, 8)}.${binary.substring(8, 16)}.${binary.substring(16, 24)}.${binary.substring(24, 32)}"
 }

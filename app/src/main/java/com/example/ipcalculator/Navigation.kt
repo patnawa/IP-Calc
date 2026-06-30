@@ -21,7 +21,7 @@ fun MainNavigation() {
     entryProvider =
       entryProvider {
         entry<Main> {
-          MainScreen(onItemClick = { navKey -> backStack.add(navKey) }, modifier = Modifier.fillMaxSize())
+          MainScreen(modifier = Modifier.fillMaxSize())
         }
       },
   )

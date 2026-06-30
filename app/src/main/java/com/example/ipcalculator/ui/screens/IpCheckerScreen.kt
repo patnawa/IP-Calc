@@ -3,30 +3,17 @@ package com.example.ipcalculator.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -34,228 +21,167 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ipcalculator.IPCalculator
-import com.example.ipcalculator.ui.components.SharedComponents.GlowingCard
-import com.example.ipcalculator.ui.components.SharedComponents.ResultRowWithCopy
-import com.example.ipcalculator.ui.components.SharedComponents.SectionHeader
+import com.example.ipcalculator.ui.components.GlowingCard
+import com.example.ipcalculator.ui.components.ResultRowWithCopy
+import com.example.ipcalculator.ui.components.SectionHeader
+import com.example.ipcalculator.ui.components.ActionButtonRow
 
 @Composable
-fun IpCheckerScreen(modifier: Modifier = Modifier) {
-    var ipInput by rememberSaveable { mutableStateOf("") }
-    var networkInput by rememberSaveable { mutableStateOf("") }
-    var hasChecked by rememberSaveable { mutableStateOf(false) }
+fun IpCheckerScreen() {
+    var targetIp by rememberSaveable { mutableStateOf("") }
+    var networkIp by rememberSaveable { mutableStateOf("") }
+    var prefixInput by rememberSaveable { mutableStateOf("24") }
+    
+    var calculated by rememberSaveable { mutableStateOf(false) }
     var isInSubnet by rememberSaveable { mutableStateOf(false) }
-    var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
-
-    // Parsed values for display
-    var parsedNetwork by rememberSaveable { mutableStateOf("") }
-    var parsedPrefix by rememberSaveable { mutableStateOf(0) }
+    var subnetResult by remember { mutableStateOf<IPCalculator.IPv4Result?>(null) }
+    
+    val scrollState = rememberScrollState()
 
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Input Card
-        ElevatedCard(
+        Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Is IP in Subnet?",
+                    text = "Verify IP Subnet Containment",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-
+                
                 OutlinedTextField(
-                    value = ipInput,
-                    onValueChange = {
-                        ipInput = it
-                        hasChecked = false
-                        errorMessage = null
+                    value = targetIp,
+                    onValueChange = { 
+                        targetIp = it 
+                        calculated = false
                     },
-                    label = { Text("IP Address") },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Target IP Address") },
                     placeholder = { Text("e.g. 192.168.1.50") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                    shape = RoundedCornerShape(12.dp)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    singleLine = true
                 )
 
-                OutlinedTextField(
-                    value = networkInput,
-                    onValueChange = {
-                        networkInput = it
-                        hasChecked = false
-                        errorMessage = null
-                    },
-                    label = { Text("Network / CIDR") },
-                    placeholder = { Text("e.g. 192.168.1.0/24") },
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                    shape = RoundedCornerShape(12.dp)
-                )
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = networkIp,
+                        onValueChange = { 
+                            networkIp = it 
+                            calculated = false
+                        },
+                        modifier = Modifier.weight(2f),
+                        label = { Text("Subnet Network IP") },
+                        placeholder = { Text("e.g. 192.168.1.0") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        singleLine = true
+                    )
+                    
+                    OutlinedTextField(
+                        value = prefixInput,
+                        onValueChange = { 
+                            if (it.isEmpty() || (it.toIntOrNull() != null && it.toInt() in 0..32)) {
+                                prefixInput = it
+                            }
+                            calculated = false
+                        },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("Prefix /CIDR") },
+                        placeholder = { Text("24") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true
+                    )
+                }
 
                 Button(
                     onClick = {
-                        errorMessage = null
-                        hasChecked = false
-
-                        val trimmedIp = ipInput.trim()
-                        val trimmedNetwork = networkInput.trim()
-
-                        // Parse network/CIDR
-                        val parts = trimmedNetwork.split("/")
-                        if (parts.size != 2) {
-                            errorMessage = "Invalid format. Use network/prefix (e.g. 192.168.1.0/24)"
-                            hasChecked = true
-                            return@Button
+                        val prefix = prefixInput.toIntOrNull() ?: 24
+                        if (IPCalculator.isValidIPv4(targetIp.trim()) && IPCalculator.isValidIPv4(networkIp.trim())) {
+                            isInSubnet = IPCalculator.isIpInSubnet(targetIp.trim(), networkIp.trim(), prefix)
+                            subnetResult = IPCalculator.calculateIPv4(networkIp.trim(), prefix)
+                            calculated = true
                         }
-
-                        val netAddr = parts[0].trim()
-                        val prefix = parts[1].trim().toIntOrNull()
-
-                        if (!IPCalculator.isValidIPv4(trimmedIp)) {
-                            errorMessage = "Invalid IP address."
-                            hasChecked = true
-                            return@Button
-                        }
-
-                        if (!IPCalculator.isValidIPv4(netAddr) || prefix == null || prefix !in 0..32) {
-                            errorMessage = "Invalid network address or prefix."
-                            hasChecked = true
-                            return@Button
-                        }
-
-                        parsedNetwork = netAddr
-                        parsedPrefix = prefix
-                        isInSubnet = IPCalculator.isIpInSubnet(trimmedIp, netAddr, prefix)
-                        hasChecked = true
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = targetIp.isNotEmpty() && networkIp.isNotEmpty() && prefixInput.isNotEmpty()
                 ) {
-                    Text("Check", fontWeight = FontWeight.Bold)
+                    Text("Check Containment", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
 
-        // Error display
         AnimatedVisibility(
-            visible = hasChecked && errorMessage != null,
+            visible = calculated,
             enter = fadeIn(),
             exit = fadeOut()
         ) {
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
-            ) {
-                Text(
-                    text = errorMessage ?: "",
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-        }
-
-        // Result display
-        AnimatedVisibility(
-            visible = hasChecked && errorMessage == null,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it / 3 }),
-            exit = fadeOut()
-        ) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                // Status card
-                ElevatedCard(
+                // Status Box
+                val containerColor = if (isInSubnet) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                } else {
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
+                }
+                val icon = if (isInSubnet) Icons.Default.Check else Icons.Default.Close
+                val tint = if (isInSubnet) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                val statusText = if (isInSubnet) {
+                    "YES — IP address $targetIp belongs to the $networkIp/$prefixInput network."
+                } else {
+                    "NO — IP address $targetIp is OUTSIDE the $networkIp/$prefixInput network."
+                }
+
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = if (isInSubnet)
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                        else
-                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
-                    )
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = containerColor)
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
+                        modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            text = if (isInSubnet) "✅" else "❌",
-                            fontSize = 28.sp
-                        )
-                        Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                        Column {
-                            Text(
-                                text = if (isInSubnet) "Yes" else "No",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isInSubnet)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.tertiary
-                            )
-                            Text(
-                                text = if (isInSubnet)
-                                    "IP is within the subnet"
-                                else
-                                    "IP is NOT within the subnet",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(32.dp))
+                        Text(text = statusText, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
                     }
                 }
 
-                // Subnet details when IP is in subnet
-                if (isInSubnet) {
-                    val subnetResult = IPCalculator.calculateIPv4(parsedNetwork, parsedPrefix)
-                    if (subnetResult != null) {
-                        GlowingCard {
-                            SectionHeader(title = "Subnet Details")
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            ResultRowWithCopy(
-                                label = "Network Address",
-                                value = "${subnetResult.networkAddress}/${subnetResult.prefix}"
-                            )
-                            ResultRowWithCopy(
-                                label = "Subnet Mask",
-                                value = subnetResult.subnetMask
-                            )
-                            ResultRowWithCopy(
-                                label = "Broadcast Address",
-                                value = subnetResult.broadcastAddress
-                            )
-                            ResultRowWithCopy(
-                                label = "Usable Range",
-                                value = "${subnetResult.usableRangeStart} – ${subnetResult.usableRangeEnd}"
-                            )
-                            ResultRowWithCopy(
-                                label = "Total Hosts",
-                                value = "${subnetResult.totalHosts} (${subnetResult.usableHosts} usable)"
-                            )
-                            ResultRowWithCopy(
-                                label = "IP Class",
-                                value = subnetResult.ipClass
-                            )
-                        }
+                // Subnet Info Card
+                subnetResult?.let { result ->
+                    GlowingCard {
+                        SectionHeader(title = "Subnet Boundary Reference")
+                        
+                        ResultRowWithCopy("Subnet Mask", result.subnetMask)
+                        ResultRowWithCopy("Network Address", "${result.networkAddress}/${result.prefix}")
+                        ResultRowWithCopy("Usable Host Range", "${result.usableRangeStart} – ${result.usableRangeEnd}")
+                        ResultRowWithCopy("Broadcast Address", result.broadcastAddress)
+                        ResultRowWithCopy("Total Usable Hosts", "${result.usableHosts}")
+                        
+                        val shareText = """
+                            Subnet Boundary Check:
+                            Target IP: $targetIp
+                            In Subnet: ${if (isInSubnet) "Yes" else "No"}
+                            Subnet Network: ${result.networkAddress}/${result.prefix}
+                            Netmask: ${result.subnetMask}
+                            Usable Range: ${result.usableRangeStart} - ${result.usableRangeEnd}
+                            Broadcast: ${result.broadcastAddress}
+                        """.trimIndent()
+                        
+                        ActionButtonRow(allResultsText = shareText)
                     }
                 }
             }

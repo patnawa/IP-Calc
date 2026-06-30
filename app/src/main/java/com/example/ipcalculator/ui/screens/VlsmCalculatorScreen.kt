@@ -1,6 +1,8 @@
 package com.example.ipcalculator.ui.screens
 
 import android.widget.Toast
+import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,6 +11,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,6 +21,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ipcalculator.IPCalculator
+import com.example.ipcalculator.ui.components.ActionButtonRow
+import com.example.ipcalculator.ui.components.GlowingCard
+import com.example.ipcalculator.ui.components.ResultRowWithCopy
+import com.example.ipcalculator.ui.components.SectionHeader
 
 data class SubnetRequirement(
     val id: Int,
@@ -27,9 +34,9 @@ data class SubnetRequirement(
 
 @Composable
 fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
-    var isVlsm by remember { mutableStateOf(true) }
-    var baseIp by remember { mutableStateOf("192.168.1.0") }
-    var basePrefix by remember { mutableStateOf("24") }
+    var isVlsm by rememberSaveable { mutableStateOf(true) }
+    var baseIp by rememberSaveable { mutableStateOf("192.168.1.0") }
+    var basePrefix by rememberSaveable { mutableStateOf("24") }
     
     // VLSM specific states
     val requirements = remember { 
@@ -39,16 +46,16 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
             SubnetRequirement(3, "Subnet 3", "10")
         )
     }
-    var nextId by remember { mutableStateOf(4) }
+    var nextId by rememberSaveable { mutableStateOf(4) }
     
     // FLSM specific states
-    var flsmSubnetsCount by remember { mutableStateOf("4") }
+    var flsmSubnetsCount by rememberSaveable { mutableStateOf("4") }
 
     // Calculation result states
     var vlsmResult by remember { mutableStateOf<List<IPCalculator.VlsmSubnet>?>(null) }
     var flsmResult by remember { mutableStateOf<List<IPCalculator.FlsmSubnet>?>(null) }
-    var calculationPerformed by remember { mutableStateOf(false) }
-    var errorMsg by remember { mutableStateOf<String?>(null) }
+    var calculationPerformed by rememberSaveable { mutableStateOf(false) }
+    var errorMsg by rememberSaveable { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
 
@@ -212,7 +219,6 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                                     }
                                 }
                             ) {
-                                // Fallback icon instead of loading vector resource to ensure compilation
                                 Text("✕", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                             }
                         }
@@ -346,6 +352,11 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
         // Show Results
         if (calculationPerformed && errorMsg == null) {
             if (isVlsm && vlsmResult != null) {
+                val prefixInt = basePrefix.toIntOrNull() ?: 24
+                
+                // Interactive IP Map Visualizer (NEW!)
+                VlsmVisualMap(basePrefix = prefixInt, subnets = vlsmResult!!)
+                
                 Text(
                     text = "Allocated Subnets (VLSM)",
                     fontWeight = FontWeight.Bold,
@@ -353,44 +364,53 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                vlsmResult!!.forEach { subnet ->
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = subnet.name,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = "/${subnet.prefix}",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.secondary
-                                )
-                            }
-                            
-                            HorizontalDivider()
+                var shareContent = "VLSM Allocation Report (Base Network: $baseIp/$basePrefix):\n\n"
 
-                            SubnetDetailRow("Subnet IP", subnet.subnetAddress)
-                            SubnetDetailRow("Subnet Mask", subnet.mask)
-                            SubnetDetailRow("Usable Range", "${subnet.rangeStart} - ${subnet.rangeEnd}")
-                            SubnetDetailRow("Broadcast Address", subnet.broadcast)
-                            SubnetDetailRow("Hosts Info", "Requested: ${subnet.requestedHosts} | Usable Allocated: ${subnet.allocatedHosts}")
+                vlsmResult!!.forEach { subnet ->
+                    val subnetText = """
+                        Subnet: ${subnet.name} (/${subnet.prefix})
+                        Network Address: ${subnet.subnetAddress}
+                        Mask: ${subnet.mask}
+                        Range: ${subnet.rangeStart} - ${subnet.rangeEnd}
+                        Broadcast: ${subnet.broadcast}
+                        Hosts: Requested: ${subnet.requestedHosts} | Allocated: ${subnet.allocatedHosts}
+                    """.trimIndent()
+                    
+                    shareContent += "$subnetText\n\n"
+
+                    GlowingCard {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = subnet.name,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "/${subnet.prefix}",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
                         }
+                        
+                        SectionHeader(title = "Allocation details")
+
+                        ResultRowWithCopy("Subnet IP Address", subnet.subnetAddress)
+                        ResultRowWithCopy("Subnet Mask", subnet.mask)
+                        ResultRowWithCopy("Usable Host Range", "${subnet.rangeStart} - ${subnet.rangeEnd}")
+                        ResultRowWithCopy("Broadcast Address", subnet.broadcast)
+                        ResultRowWithCopy("Usable / Requested Hosts", "${subnet.allocatedHosts} / ${subnet.requestedHosts}")
                     }
                 }
+                
+                // Copy all / Share row for the entire report
+                ActionButtonRow(allResultsText = shareContent.trim())
+                
             } else if (!isVlsm && flsmResult != null) {
                 Text(
                     text = "Allocated Subnets (FLSM)",
@@ -399,64 +419,152 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                flsmResult!!.forEach { subnet ->
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Subnet #${subnet.id}",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = "/${subnet.prefix}",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.secondary
-                                )
-                            }
-                            
-                            HorizontalDivider()
+                var shareContent = "FLSM Allocation Report (Base Network: $baseIp/$basePrefix):\n\n"
 
-                            SubnetDetailRow("Subnet IP", subnet.subnetAddress)
-                            SubnetDetailRow("Subnet Mask", subnet.mask)
-                            SubnetDetailRow("Usable Range", "${subnet.rangeStart} - ${subnet.rangeEnd}")
-                            SubnetDetailRow("Broadcast Address", subnet.broadcast)
+                flsmResult!!.forEach { subnet ->
+                    val subnetText = """
+                        Subnet: #${subnet.id} (/${subnet.prefix})
+                        Network Address: ${subnet.subnetAddress}
+                        Mask: ${subnet.mask}
+                        Range: ${subnet.rangeStart} - ${subnet.rangeEnd}
+                        Broadcast: ${subnet.broadcast}
+                    """.trimIndent()
+                    
+                    shareContent += "$subnetText\n\n"
+
+                    GlowingCard {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Subnet #${subnet.id}",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "/${subnet.prefix}",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
                         }
+                        
+                        SectionHeader(title = "Subnet boundary")
+
+                        ResultRowWithCopy("Subnet IP Address", subnet.subnetAddress)
+                        ResultRowWithCopy("Subnet Mask", subnet.mask)
+                        ResultRowWithCopy("Usable Host Range", "${subnet.rangeStart} - ${subnet.rangeEnd}")
+                        ResultRowWithCopy("Broadcast Address", subnet.broadcast)
                     }
                 }
+
+                ActionButtonRow(allResultsText = shareContent.trim())
             }
         }
     }
 }
 
 @Composable
-fun SubnetDetailRow(label: String, value: String) {
-    Row(
+fun VlsmVisualMap(basePrefix: Int, subnets: List<IPCalculator.VlsmSubnet>) {
+    val totalSize = 1L shl (32 - basePrefix)
+    val allocatedSize = subnets.sumOf { 1L shl (32 - it.prefix) }
+    val freeSize = totalSize - allocatedSize
+    
+    val colors = listOf(
+        MaterialTheme.colorScheme.primary,
+        MaterialTheme.colorScheme.secondary,
+        MaterialTheme.colorScheme.tertiary,
+        MaterialTheme.colorScheme.error
+    )
+    
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
     ) {
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Interactive IP Allocation Map",
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.primary
+            )
+            
+            // Horizontal Bar representing allocated vs free blocks
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(36.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+            ) {
+                subnets.forEachIndexed { index, subnet ->
+                    val size = 1L shl (32 - subnet.prefix)
+                    val color = colors[index % colors.size]
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(size.toFloat())
+                            .background(color)
+                            .padding(horizontal = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (size >= totalSize / 16) {
+                            Text(
+                                text = "${subnet.name} (/${subnet.prefix})",
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+                if (freeSize > 0) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(freeSize.toFloat())
+                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                            .padding(horizontal = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (freeSize >= totalSize / 16) {
+                            Text(
+                                text = "Free ($freeSize)",
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            }
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Utilization: ${"%.1f".format((allocatedSize.toDouble() / totalSize.toDouble()) * 100.0)}%",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Allocated: $allocatedSize / $totalSize IPs",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }

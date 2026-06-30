@@ -3,331 +3,224 @@ package com.example.ipcalculator.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ipcalculator.IPCalculator
-import com.example.ipcalculator.ui.components.SharedComponents.GlowingCard
-import com.example.ipcalculator.ui.components.SharedComponents.SectionHeader
+import com.example.ipcalculator.ui.components.GlowingCard
+import com.example.ipcalculator.ui.components.SectionHeader
+import com.example.ipcalculator.ui.components.ActionButtonRow
 
 @Composable
-fun SubnetCompareScreen(modifier: Modifier = Modifier) {
+fun SubnetCompareScreen() {
     var ipA by rememberSaveable { mutableStateOf("") }
     var prefixA by rememberSaveable { mutableStateOf("24") }
     var ipB by rememberSaveable { mutableStateOf("") }
     var prefixB by rememberSaveable { mutableStateOf("24") }
 
-    var hasCompared by rememberSaveable { mutableStateOf(false) }
-    var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
-
-    // We can't store complex objects in rememberSaveable, so we store the inputs and recompute
-    var comparedIpA by rememberSaveable { mutableStateOf("") }
-    var comparedPrefixA by rememberSaveable { mutableStateOf(0) }
-    var comparedIpB by rememberSaveable { mutableStateOf("") }
-    var comparedPrefixB by rememberSaveable { mutableStateOf(0) }
+    var calculated by rememberSaveable { mutableStateOf(false) }
+    var comparison by remember { mutableStateOf<IPCalculator.SubnetComparison?>(null) }
+    
+    val scrollState = rememberScrollState()
 
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Subnet A Input
-        ElevatedCard(
+        Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+            shape = RoundedCornerShape(16.dp)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Subnet A",
+                    text = "Subnet Comparison Engine",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
 
+                // Subnet A inputs
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedTextField(
                         value = ipA,
-                        onValueChange = {
-                            ipA = it
-                            hasCompared = false
-                            errorMessage = null
-                        },
-                        label = { Text("IP Address") },
-                        placeholder = { Text("e.g. 192.168.1.0") },
+                        onValueChange = { ipA = it; calculated = false },
                         modifier = Modifier.weight(2f),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                        shape = RoundedCornerShape(12.dp)
+                        label = { Text("Subnet A IP") },
+                        placeholder = { Text("e.g. 192.168.1.0") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        singleLine = true
                     )
-
                     OutlinedTextField(
                         value = prefixA,
-                        onValueChange = {
-                            val v = it.toIntOrNull()
-                            if (it.isEmpty() || (v != null && v in 0..32)) {
+                        onValueChange = { 
+                            if (it.isEmpty() || (it.toIntOrNull() != null && it.toInt() in 0..32)) {
                                 prefixA = it
-                                hasCompared = false
-                                errorMessage = null
                             }
+                            calculated = false
                         },
-                        label = { Text("/ Prefix") },
                         modifier = Modifier.weight(1f),
-                        singleLine = true,
+                        label = { Text("/CIDR") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        shape = RoundedCornerShape(12.dp)
+                        singleLine = true
                     )
                 }
-            }
-        }
 
-        // Subnet B Input
-        ElevatedCard(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "Subnet B",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-
+                // Divider Icon
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                // Subnet B inputs
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedTextField(
                         value = ipB,
-                        onValueChange = {
-                            ipB = it
-                            hasCompared = false
-                            errorMessage = null
-                        },
-                        label = { Text("IP Address") },
-                        placeholder = { Text("e.g. 10.0.0.0") },
+                        onValueChange = { ipB = it; calculated = false },
                         modifier = Modifier.weight(2f),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                        shape = RoundedCornerShape(12.dp)
+                        label = { Text("Subnet B IP") },
+                        placeholder = { Text("e.g. 192.168.1.128") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        singleLine = true
                     )
-
                     OutlinedTextField(
                         value = prefixB,
-                        onValueChange = {
-                            val v = it.toIntOrNull()
-                            if (it.isEmpty() || (v != null && v in 0..32)) {
+                        onValueChange = { 
+                            if (it.isEmpty() || (it.toIntOrNull() != null && it.toInt() in 0..32)) {
                                 prefixB = it
-                                hasCompared = false
-                                errorMessage = null
                             }
+                            calculated = false
                         },
-                        label = { Text("/ Prefix") },
                         modifier = Modifier.weight(1f),
-                        singleLine = true,
+                        label = { Text("/CIDR") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        shape = RoundedCornerShape(12.dp)
+                        singleLine = true
                     )
+                }
+
+                Button(
+                    onClick = {
+                        val pA = prefixA.toIntOrNull() ?: 24
+                        val pB = prefixB.toIntOrNull() ?: 24
+                        if (IPCalculator.isValidIPv4(ipA.trim()) && IPCalculator.isValidIPv4(ipB.trim())) {
+                            comparison = IPCalculator.compareSubnets(ipA.trim(), pA, ipB.trim(), pB)
+                            calculated = comparison != null
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = ipA.isNotEmpty() && prefixA.isNotEmpty() && ipB.isNotEmpty() && prefixB.isNotEmpty()
+                ) {
+                    Text("Compare Subnets", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
 
-        // Compare Button
-        Button(
-            onClick = {
-                errorMessage = null
-                hasCompared = false
-
-                val trimA = ipA.trim()
-                val trimB = ipB.trim()
-                val pA = prefixA.toIntOrNull()
-                val pB = prefixB.toIntOrNull()
-
-                if (!IPCalculator.isValidIPv4(trimA)) {
-                    errorMessage = "Invalid IP address for Subnet A."
-                    hasCompared = true
-                    return@Button
-                }
-                if (!IPCalculator.isValidIPv4(trimB)) {
-                    errorMessage = "Invalid IP address for Subnet B."
-                    hasCompared = true
-                    return@Button
-                }
-                if (pA == null || pA !in 0..32) {
-                    errorMessage = "Invalid prefix for Subnet A (0-32)."
-                    hasCompared = true
-                    return@Button
-                }
-                if (pB == null || pB !in 0..32) {
-                    errorMessage = "Invalid prefix for Subnet B (0-32)."
-                    hasCompared = true
-                    return@Button
-                }
-
-                comparedIpA = trimA
-                comparedPrefixA = pA
-                comparedIpB = trimB
-                comparedPrefixB = pB
-                hasCompared = true
-            },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text("Compare", fontWeight = FontWeight.Bold)
-        }
-
-        // Error
         AnimatedVisibility(
-            visible = hasCompared && errorMessage != null,
+            visible = calculated,
             enter = fadeIn(),
             exit = fadeOut()
         ) {
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
-            ) {
-                Text(
-                    text = errorMessage ?: "",
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-        }
-
-        // Results
-        AnimatedVisibility(
-            visible = hasCompared && errorMessage == null,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it / 3 }),
-            exit = fadeOut()
-        ) {
-            val comparison = IPCalculator.compareSubnets(
-                comparedIpA, comparedPrefixA,
-                comparedIpB, comparedPrefixB
-            )
-
-            if (comparison != null) {
+            comparison?.let { comp ->
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    // Overlap Analysis Card
-                    val overlapText = when {
-                        comparison.aContainsB && comparison.bContainsA -> "🟰  Identical Subnets"
-                        comparison.aContainsB -> "🔵  Subnet A contains Subnet B"
-                        comparison.bContainsA -> "🟣  Subnet B contains Subnet A"
-                        comparison.overlaps -> "⚠️  Overlapping Subnets"
-                        else -> "✅  No Overlap"
+                    // Relationship Badge Box
+                    val relationText = when {
+                        comp.aContainsB && comp.bContainsA -> "Equal Subnets (Identical)"
+                        comp.aContainsB -> "Subnet A CONTAINS Subnet B"
+                        comp.bContainsA -> "Subnet B CONTAINS Subnet A"
+                        comp.overlaps -> "Overlapping Subnets (Conflict!)"
+                        else -> "Disjoint Subnets (No Overlap/Safe)"
+                    }
+                    val relationColor = when {
+                        comp.aContainsB && comp.bContainsA -> MaterialTheme.colorScheme.primary
+                        comp.overlaps && !comp.aContainsB && !comp.bContainsA -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.secondary
                     }
 
-                    val overlapColor = when {
-                        comparison.aContainsB || comparison.bContainsA -> MaterialTheme.colorScheme.secondary
-                        comparison.overlaps -> MaterialTheme.colorScheme.tertiary
-                        else -> MaterialTheme.colorScheme.primary
-                    }
-
-                    ElevatedCard(
+                    Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = overlapColor.copy(alpha = 0.1f)
-                        )
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = relationColor.copy(alpha = 0.15f)),
+                        border = BorderStroke(1.dp, relationColor.copy(alpha = 0.4f))
                     ) {
                         Text(
-                            text = overlapText,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = overlapColor,
+                            text = relationText,
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            textAlign = TextAlign.Center
+                                .padding(16.dp)
+                                .align(Alignment.CenterHorizontally),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = relationColor
                         )
                     }
 
-                    // Side-by-Side Comparison
+                    // Comparison details card
                     GlowingCard {
-                        SectionHeader(title = "Comparison Details")
-                        Spacer(modifier = Modifier.height(4.dp))
+                        SectionHeader(title = "Subnet Comparison Details")
 
-                        ComparisonRow(
-                            label = "Network Address",
-                            valueA = "${comparison.subnetA.networkAddress}/${comparison.subnetA.prefix}",
-                            valueB = "${comparison.subnetB.networkAddress}/${comparison.subnetB.prefix}"
-                        )
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                        CompareItemRow(label = "Network", valA = "${comp.subnetA.networkAddress}/${comp.subnetA.prefix}", valB = "${comp.subnetB.networkAddress}/${comp.subnetB.prefix}")
+                        CompareItemRow(label = "Netmask", valA = comp.subnetA.subnetMask, valB = comp.subnetB.subnetMask)
+                        CompareItemRow(label = "Broadcast", valA = comp.subnetA.broadcastAddress, valB = comp.subnetB.broadcastAddress)
+                        CompareItemRow(label = "Host Range", valA = "${comp.subnetA.usableRangeStart} – ${comp.subnetA.usableRangeEnd}", valB = "${comp.subnetB.usableRangeStart} – ${comp.subnetB.usableRangeEnd}")
+                        CompareItemRow(label = "Total Hosts", valA = comp.subnetA.totalHosts.toString(), valB = comp.subnetB.totalHosts.toString())
+                        CompareItemRow(label = "Usable Hosts", valA = comp.subnetA.usableHosts.toString(), valB = comp.subnetB.usableHosts.toString())
+                        CompareItemRow(label = "IP Class", valA = comp.subnetA.ipClass, valB = comp.subnetB.ipClass)
+                        CompareItemRow(label = "IP Type", valA = comp.subnetA.ipType, valB = comp.subnetB.ipType)
 
-                        ComparisonRow(
-                            label = "Subnet Mask",
-                            valueA = comparison.subnetA.subnetMask,
-                            valueB = comparison.subnetB.subnetMask
-                        )
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                        val shareText = """
+                            Subnet Comparison Report:
+                            Subnet A: ${comp.subnetA.networkAddress}/${comp.subnetA.prefix}
+                            Subnet B: ${comp.subnetB.networkAddress}/${comp.subnetB.prefix}
+                            Relationship: $relationText
+                            
+                            Subnet A Details:
+                            - Mask: ${comp.subnetA.subnetMask}
+                            - Range: ${comp.subnetA.usableRangeStart} - ${comp.subnetA.usableRangeEnd}
+                            - Usable Hosts: ${comp.subnetA.usableHosts}
+                            
+                            Subnet B Details:
+                            - Mask: ${comp.subnetB.subnetMask}
+                            - Range: ${comp.subnetB.usableRangeStart} - ${comp.subnetB.usableRangeEnd}
+                            - Usable Hosts: ${comp.subnetB.usableHosts}
+                        """.trimIndent()
 
-                        ComparisonRow(
-                            label = "Broadcast",
-                            valueA = comparison.subnetA.broadcastAddress,
-                            valueB = comparison.subnetB.broadcastAddress
-                        )
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
-
-                        ComparisonRow(
-                            label = "Usable Range",
-                            valueA = "${comparison.subnetA.usableRangeStart}\n– ${comparison.subnetA.usableRangeEnd}",
-                            valueB = "${comparison.subnetB.usableRangeStart}\n– ${comparison.subnetB.usableRangeEnd}"
-                        )
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
-
-                        ComparisonRow(
-                            label = "Total Hosts",
-                            valueA = comparison.subnetA.totalHosts.toString(),
-                            valueB = comparison.subnetB.totalHosts.toString()
-                        )
+                        ActionButtonRow(allResultsText = shareText)
                     }
                 }
             }
@@ -336,67 +229,40 @@ fun SubnetCompareScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun ComparisonRow(label: String, valueA: String, valueB: String) {
+fun CompareItemRow(label: String, valA: String, valB: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .padding(vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
             text = label,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
+            fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 4.dp)
+            fontWeight = FontWeight.SemiBold
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Subnet A value
-            Box(
+            Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
                     .padding(8.dp)
             ) {
-                Column {
-                    Text(
-                        text = "A",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = valueA,
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+                Text(text = "A", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                Text(text = valA, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
             }
-
-            // Subnet B value
-            Box(
+            Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.08f))
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
                     .padding(8.dp)
             ) {
-                Column {
-                    Text(
-                        text = "B",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                    Text(
-                        text = valueB,
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+                Text(text = "B", fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
+                Text(text = valB, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
             }
         }
     }

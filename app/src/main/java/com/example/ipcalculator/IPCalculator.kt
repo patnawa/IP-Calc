@@ -582,4 +582,272 @@ object IPCalculator {
         val mask = cidrToMask(commonPrefixLength)
         return Pair(longToIPv4(networkAddresses[0] and mask), commonPrefixLength)
     }
+
+    // --- NEW: QUIZ DATA STRUCTURES & LOGIC ---
+
+    data class QuizQuestion(
+        val ip: String,
+        val prefix: Int,
+        val questionType: QuestionType,
+        val prompt: String,
+        val correctAnswer: String,
+        val options: List<String>
+    )
+
+    enum class QuestionType {
+        NETWORK_ADDRESS,
+        BROADCAST_ADDRESS,
+        FIRST_HOST,
+        LAST_HOST,
+        USABLE_HOSTS,
+        WILDCARD_MASK
+    }
+
+    fun generateQuizQuestion(): QuizQuestion {
+        val random = java.util.Random()
+        val prefix = random.nextInt(23) + 8 // /8 to /30
+        val ipParts = List(4) { if (it == 0) random.nextInt(223) + 1 else random.nextInt(256) }
+        val ipStr = ipParts.joinToString(".")
+        
+        val result = calculateIPv4(ipStr, prefix)!!
+        val type = QuestionType.values()[random.nextInt(QuestionType.values().size)]
+        
+        val prompt: String
+        val correct: String
+        val options = ArrayList<String>()
+        
+        when (type) {
+            QuestionType.NETWORK_ADDRESS -> {
+                prompt = "What is the Network Address for $ipStr/$prefix?"
+                correct = result.networkAddress
+                options.add(correct)
+                options.add(longToIPv4(ipv4ToLong(correct) + (1L shl (32 - prefix))))
+                options.add(longToIPv4(ipv4ToLong(correct) - (1L shl (32 - prefix))))
+                options.add(ipStr)
+            }
+            QuestionType.BROADCAST_ADDRESS -> {
+                prompt = "What is the Broadcast Address for $ipStr/$prefix?"
+                correct = result.broadcastAddress
+                options.add(correct)
+                options.add(longToIPv4(ipv4ToLong(correct) + 1))
+                options.add(result.networkAddress)
+                options.add(longToIPv4(ipv4ToLong(result.networkAddress) + (1L shl (32 - prefix))))
+            }
+            QuestionType.FIRST_HOST -> {
+                prompt = "What is the First Usable Host Address for $ipStr/$prefix?"
+                correct = result.usableRangeStart
+                options.add(correct)
+                options.add(result.networkAddress)
+                options.add(longToIPv4(ipv4ToLong(result.networkAddress) + 2))
+                options.add(result.broadcastAddress)
+            }
+            QuestionType.LAST_HOST -> {
+                prompt = "What is the Last Usable Host Address for $ipStr/$prefix?"
+                correct = result.usableRangeEnd
+                options.add(correct)
+                options.add(result.broadcastAddress)
+                options.add(longToIPv4(ipv4ToLong(result.broadcastAddress) - 2))
+                options.add(result.networkAddress)
+            }
+            QuestionType.USABLE_HOSTS -> {
+                prompt = "How many usable hosts are available in a /$prefix subnet?"
+                correct = result.usableHosts.toString()
+                options.add(correct)
+                options.add((result.totalHosts).toString())
+                options.add((result.usableHosts + 2).toString())
+                options.add((result.usableHosts - 2).coerceAtLeast(0).toString())
+            }
+            QuestionType.WILDCARD_MASK -> {
+                prompt = "What is the Wildcard Mask for a /$prefix prefix?"
+                correct = result.wildcardMask
+                options.add(correct)
+                options.add(result.subnetMask)
+                val tempCidr = (prefix + 1).coerceAtMost(32)
+                options.add(calculateIPv4(ipStr, tempCidr)!!.wildcardMask)
+                val tempCidr2 = (prefix - 1).coerceAtLeast(0)
+                options.add(calculateIPv4(ipStr, tempCidr2)!!.wildcardMask)
+            }
+        }
+        
+        val cleanOptions = options.map { 
+            if (it.contains(".")) {
+                if (isValidIPv4(it)) it else result.networkAddress
+            } else it
+        }.distinct().shuffled()
+        
+        val finalOptions = cleanOptions.toMutableList()
+        while (finalOptions.size < 4) {
+            val dummy = when (type) {
+                QuestionType.USABLE_HOSTS -> (random.nextInt(1000) + 2).toString()
+                QuestionType.WILDCARD_MASK -> "0.0.0.${random.nextInt(256)}"
+                else -> "192.168.${random.nextInt(256)}.${random.nextInt(256)}"
+            }
+            if (!finalOptions.contains(dummy)) finalOptions.add(dummy)
+        }
+        
+        return QuizQuestion(
+            ip = ipStr,
+            prefix = prefix,
+            questionType = type,
+            prompt = prompt,
+            correctAnswer = correct,
+            options = finalOptions.shuffled()
+        )
+    }
+
+    // --- NEW: IPv6 EUI-64 GENERATOR ---
+
+    fun calculateEui64(macAddress: String, ipv6Prefix: String): String? {
+        val cleanedMac = macAddress.replace(Regex("[^0-9a-fA-F]"), "")
+        if (cleanedMac.length != 12) return null
+        
+        val part1 = cleanedMac.substring(0, 6)
+        val part2 = cleanedMac.substring(6, 12)
+        val euiPart = part1 + "FFFE" + part2
+        
+        val firstByteHex = euiPart.substring(0, 2)
+        val firstByteVal = firstByteHex.toInt(16)
+        val flippedByteVal = firstByteVal xor 2
+        val flippedByteHex = flippedByteVal.toString(16).padStart(2, '0')
+        
+        val modifiedEuiPart = flippedByteHex + euiPart.substring(2)
+        
+        var cleanPrefix = ipv6Prefix.trim().lowercase(Locale.ROOT)
+        if (cleanPrefix.contains("/")) {
+            cleanPrefix = cleanPrefix.substringBefore("/")
+        }
+        if (!isValidIPv6(cleanPrefix)) return null
+        
+        val prefixBigInt = ipv6ToBigInteger(cleanPrefix)
+        val prefixMask = BigInteger.ONE.shiftLeft(128).subtract(BigInteger.ONE).shiftLeft(64)
+        val netPrefixPart = prefixBigInt.and(prefixMask)
+        
+        val interfaceIdBigInt = BigInteger(modifiedEuiPart, 16)
+        val fullIPv6BigInt = netPrefixPart.or(interfaceIdBigInt)
+        
+        return bigIntegerToIPv6(fullIPv6BigInt)
+    }
+
+    // --- NEW: MAC ADDRESS OUI LOOKUP & FORMATTER ---
+
+    fun lookupMacOui(mac: String): String {
+        val cleaned = mac.replace(Regex("[^0-9a-fA-F]"), "").uppercase(Locale.ROOT)
+        if (cleaned.length < 6) return "Invalid MAC Address"
+        val oui = cleaned.substring(0, 6)
+        
+        val ouiMap = mapOf(
+            "00000C" to "Cisco Systems",
+            "00005E" to "IANA",
+            "00001D" to "Cabletron",
+            "00037F" to "Atheros",
+            "0005B9" to "Cisco",
+            "000A95" to "Apple",
+            "000D3A" to "Microsoft",
+            "000E7F" to "Hewlett Packard",
+            "000F66" to "Cisco",
+            "0010FA" to "Juniper Networks",
+            "001124" to "Apple",
+            "001422" to "Dell",
+            "001565" to "IP phone / Yealink",
+            "00166F" to "Intel",
+            "0017F2" to "Apple",
+            "00188B" to "Dell",
+            "001A11" to "Google",
+            "001A8C" to "Sophos",
+            "001C42" to "Parallels",
+            "001D0F" to "TP-Link",
+            "001E8C" to "ASUSTek",
+            "001F29" to "HP",
+            "002170" to "Dell",
+            "002241" to "Intel",
+            "0024H4" to "Samsung",
+            "002590" to "Super Micro",
+            "0026BB" to "Apple",
+            "005056" to "VMware",
+            "000C29" to "VMware",
+            "00155D" to "Microsoft Hyper-V",
+            "001C7F" to "HTC",
+            "002376" to "HTC",
+            "002608" to "Huawei",
+            "00E04C" to "Realtek",
+            "00E0FC" to "Huawei",
+            "0418D6" to "Ubiquiti Networks",
+            "042690" to "Xiaomi",
+            "080027" to "Oracle VM VirtualBox",
+            "0C8063" to "TP-Link",
+            "10DDB1" to "Apple",
+            "14109F" to "Apple",
+            "18140F" to "Ralink Technology",
+            "186590" to "Apple",
+            "203052" to "Samsung",
+            "245EBE" to "Xiaomi",
+            "24A074" to "Ubiquiti Networks",
+            "2C3033" to "Netgear",
+            "2C768A" to "Sony Interactive Entertainment (PlayStation)",
+            "3C08F6" to "TP-Link",
+            "3C15C2" to "Intel",
+            "3C5A37" to "Google",
+            "3C970E" to "Apple",
+            "40169F" to "TP-Link",
+            "408D5C" to "Apple",
+            "440712" to "Huawei",
+            "488F5A" to "Xiaomi",
+            "507A55" to "Google",
+            "54AF26" to "Sony",
+            "581122" to "Intel",
+            "5855CA" to "Apple",
+            "60AF6D" to "Intel",
+            "64006A" to "Huawei",
+            "6416A0" to "Apple",
+            "708BCD" to "ASUSTek",
+            "7C5A1C" to "Xiaomi",
+            "7CD1C3" to "Apple",
+            "8416F9" to "Intel",
+            "84C9B2" to "Samsung",
+            "8C8590" to "Apple",
+            "908D78" to "Xiaomi",
+            "94103F" to "Samsung",
+            "98E7F4" to "Apple",
+            "A088B4" to "Intel",
+            "A09347" to "Silicon Laboratories",
+            "B42E99" to "Apple",
+            "B4B52F" to "TP-Link",
+            "B827EB" to "Raspberry Pi Foundation",
+            "B8AC6F" to "Intel",
+            "C05627" to "Huawei",
+            "C4AD34" to "Xiaomi",
+            "C8D719" to "Cisco",
+            "D4BF7F" to "Ubiquiti Networks",
+            "D850E6" to "ASUSTek",
+            "D897BA" to "Samsung",
+            "E0286D" to "Google",
+            "E03F49" to "ASUSTek",
+            "E0D55E" to "Intel",
+            "E4E4AB" to "Huawei",
+            "E8ABFA" to "Sony",
+            "F01898" to "Apple",
+            "F430B9" to "Intel",
+            "F4F5E8" to "Google",
+            "F80FF9" to "Apple",
+            "FC3497" to "Samsung"
+        )
+        return ouiMap[oui] ?: "Unknown Vendor"
+    }
+
+    fun formatMacAddress(mac: String): Map<String, String> {
+        val cleaned = mac.replace(Regex("[^0-9a-fA-F]"), "").lowercase(Locale.ROOT)
+        if (cleaned.length != 12) return emptyMap()
+        
+        val colonForm = (0..5).joinToString(":") { cleaned.substring(it * 2, it * 2 + 2) }
+        val hyphenForm = (0..5).joinToString("-") { cleaned.substring(it * 2, it * 2 + 2) }
+        val dotForm = "${cleaned.substring(0, 4)}.${cleaned.substring(4, 8)}.${cleaned.substring(8, 12)}"
+        val rawForm = cleaned
+        
+        return mapOf(
+            "colon" to colonForm.uppercase(Locale.ROOT),
+            "hyphen" to hyphenForm.uppercase(Locale.ROOT),
+            "dot" to dotForm,
+            "raw" to rawForm
+        )
+    }
 }

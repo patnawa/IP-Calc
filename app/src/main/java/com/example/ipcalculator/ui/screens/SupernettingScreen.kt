@@ -1,19 +1,25 @@
 package com.example.ipcalculator.ui.screens
 
 import android.widget.Toast
+import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ipcalculator.IPCalculator
+import com.example.ipcalculator.ui.components.ActionButtonRow
+import com.example.ipcalculator.ui.components.GlowingCard
+import com.example.ipcalculator.ui.components.ResultRowWithCopy
+import com.example.ipcalculator.ui.components.SectionHeader
 
 @Composable
 fun SupernettingScreen(modifier: Modifier = Modifier) {
@@ -28,16 +34,16 @@ fun SupernettingScreen(modifier: Modifier = Modifier) {
 
     var resultNetwork by remember { mutableStateOf<String?>(null) }
     var resultPrefix by remember { mutableStateOf<Int?>(null) }
-    var calculationPerformed by remember { mutableStateOf(false) }
-    var errorMsg by remember { mutableStateOf<String?>(null) }
+    var calculationPerformed by rememberSaveable { mutableStateOf(false) }
+    var errorMsg by rememberSaveable { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -66,6 +72,7 @@ fun SupernettingScreen(modifier: Modifier = Modifier) {
                             value = subnet,
                             onValueChange = { newVal ->
                                 subnets[index] = newVal
+                                calculationPerformed = false
                             },
                             label = { Text("Subnet (IP/Prefix)") },
                             placeholder = { Text("e.g. 192.168.1.0/24") },
@@ -77,6 +84,7 @@ fun SupernettingScreen(modifier: Modifier = Modifier) {
                             onClick = {
                                 if (subnets.size > 1) {
                                     subnets.removeAt(index)
+                                    calculationPerformed = false
                                 } else {
                                     Toast.makeText(context, "Must keep at least one subnet.", Toast.LENGTH_SHORT).show()
                                 }
@@ -93,7 +101,19 @@ fun SupernettingScreen(modifier: Modifier = Modifier) {
                 ) {
                     OutlinedButton(
                         onClick = {
-                            subnets.add("192.168.0.0/24")
+                            val lastSubnet = subnets.lastOrNull() ?: "192.168.0.0/24"
+                            val parts = lastSubnet.split("/")
+                            val ip = parts.getOrNull(0) ?: "192.168.0.0"
+                            val prefix = parts.getOrNull(1) ?: "24"
+                            val ipParts = ip.split(".")
+                            if (ipParts.size == 4) {
+                                val third = ipParts[2].toIntOrNull() ?: 0
+                                val nextSub = "${ipParts[0]}.${ipParts[1]}.${third + 1}.0/$prefix"
+                                subnets.add(nextSub)
+                            } else {
+                                subnets.add("192.168.0.0/24")
+                            }
+                            calculationPerformed = false
                         },
                         modifier = Modifier.weight(1f)
                     ) {
@@ -106,13 +126,18 @@ fun SupernettingScreen(modifier: Modifier = Modifier) {
                             resultNetwork = null
                             resultPrefix = null
                             calculationPerformed = true
-
-                            // Validate inputs
-                            val trimmedSubnets = subnets.map { it.trim() }
-                            for (sub in trimmedSubnets) {
+                            
+                            val cleanedSubnets = subnets.map { it.trim() }.filter { it.isNotEmpty() }
+                            if (cleanedSubnets.isEmpty()) {
+                                errorMsg = "Please enter at least one subnet."
+                                return@Button
+                            }
+                            
+                            // Validate format
+                            for (sub in cleanedSubnets) {
                                 val parts = sub.split("/")
                                 if (parts.isEmpty()) {
-                                    errorMsg = "Invalid subnet format. Use IP/Prefix (e.g. 192.168.1.0/24)"
+                                    errorMsg = "Invalid format: $sub (Expected IP/Prefix)"
                                     return@Button
                                 }
                                 val ip = parts[0]
@@ -123,18 +148,18 @@ fun SupernettingScreen(modifier: Modifier = Modifier) {
                                 if (parts.size > 1) {
                                     val prefix = parts[1].toIntOrNull()
                                     if (prefix == null || prefix !in 0..32) {
-                                        errorMsg = "Invalid prefix for subnet: $sub"
+                                        errorMsg = "Invalid prefix: ${parts[1]} (Must be 0-32)"
                                         return@Button
                                     }
                                 }
                             }
-
-                            val res = IPCalculator.summarizeRoutes(trimmedSubnets)
-                            if (res == null) {
-                                errorMsg = "Failed to summarize routes. Check your subnet addresses."
+                            
+                            val result = IPCalculator.summarizeRoutes(cleanedSubnets)
+                            if (result != null) {
+                                resultNetwork = result.first
+                                resultPrefix = result.second
                             } else {
-                                resultNetwork = res.first
-                                resultPrefix = res.second
+                                errorMsg = "Failed to summarize routes. Check address formats."
                             }
                         },
                         modifier = Modifier.weight(1f)
@@ -145,68 +170,52 @@ fun SupernettingScreen(modifier: Modifier = Modifier) {
             }
         }
 
+        // Error display
         if (calculationPerformed && errorMsg != null) {
-            ElevatedCard(
+            Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = errorMsg!!,
                     color = MaterialTheme.colorScheme.onErrorContainer,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(16.dp),
-                    fontWeight = FontWeight.Bold
+                    fontSize = 14.sp
                 )
             }
         }
 
-        if (calculationPerformed && errorMsg == null && resultNetwork != null && resultPrefix != null) {
-            val details = IPCalculator.calculateIPv4(resultNetwork!!, resultPrefix!!)
+        // Result displays
+        AnimatedVisibility(
+            visible = calculationPerformed && errorMsg == null && resultNetwork != null,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            val net = resultNetwork ?: ""
+            val pref = resultPrefix ?: 24
+            val details = IPCalculator.calculateIPv4(net, pref)
             
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Summarized Route (Supernet)",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    HorizontalDivider()
-
-                    ResultRow(
-                        label = "Summarized Route / CIDR",
-                        value = "$resultNetwork/$resultPrefix",
-                        clipboardManager = clipboardManager
-                    )
-
-                    if (details != null) {
-                        ResultRow(
-                            label = "Subnet Mask",
-                            value = details.subnetMask,
-                            clipboardManager = clipboardManager
-                        )
-                        ResultRow(
-                            label = "Range Start Address",
-                            value = details.usableRangeStart,
-                            clipboardManager = clipboardManager
-                        )
-                        ResultRow(
-                            label = "Range End Address",
-                            value = details.usableRangeEnd,
-                            clipboardManager = clipboardManager
-                        )
-                        ResultRow(
-                            label = "Total Covered IP Addresses",
-                            value = details.totalHosts.toString(),
-                            clipboardManager = clipboardManager
-                        )
-                    }
+            details?.let { res ->
+                GlowingCard {
+                    SectionHeader(title = "Summarized Supernet Route")
+                    
+                    ResultRowWithCopy("Summarized Route", "$net/$pref")
+                    ResultRowWithCopy("Subnet Mask", res.subnetMask)
+                    ResultRowWithCopy("Wildcard Mask", res.wildcardMask)
+                    ResultRowWithCopy("Usable Host Range", "${res.usableRangeStart} - ${res.usableRangeEnd}")
+                    ResultRowWithCopy("Total Covered IPs", "${res.totalHosts}")
+                    
+                    val shareText = """
+                        Supernet Summarization Report:
+                        Input Subnets: ${subnets.joinToString(", ")}
+                        Summarized Route: $net/$pref
+                        Netmask: ${res.subnetMask}
+                        Range: ${res.usableRangeStart} - ${res.usableRangeEnd}
+                        Total Covered IPs: ${res.totalHosts}
+                    """.trimIndent()
+                    
+                    ActionButtonRow(allResultsText = shareText)
                 }
             }
         }

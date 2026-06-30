@@ -1,6 +1,6 @@
 package com.example.ipcalculator.ui.screens
 
-import android.widget.Toast
+import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,10 +11,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -24,19 +24,23 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ipcalculator.IPCalculator
+import com.example.ipcalculator.ui.components.ActionButtonRow
+import com.example.ipcalculator.ui.components.GlowingCard
+import com.example.ipcalculator.ui.components.ResultRowWithCopy
+import com.example.ipcalculator.ui.components.SectionHeader
 
 @Composable
 fun SubnetCalculatorScreen(modifier: Modifier = Modifier) {
-    var isIPv4 by remember { mutableStateOf(true) }
-    var ipInput by remember { mutableStateOf("192.168.1.1") }
-    var prefixInput by remember { mutableStateOf("24") }
+    var isIPv4 by rememberSaveable { mutableStateOf(true) }
+    
+    // IPv4 states
+    var ipInput by rememberSaveable { mutableStateOf("192.168.1.1") }
+    var prefixInput by rememberSaveable { mutableStateOf("24") }
+    var maskInput by rememberSaveable { mutableStateOf("255.255.255.0") }
     
     // IPv6 states
-    var ipv6Input by remember { mutableStateOf("2001:db8::") }
-    var ipv6PrefixInput by remember { mutableStateOf("64") }
-
-    val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
+    var ipv6Input by rememberSaveable { mutableStateOf("2001:db8::") }
+    var ipv6PrefixInput by rememberSaveable { mutableStateOf("64") }
 
     Column(
         modifier = modifier
@@ -109,136 +113,158 @@ fun SubnetCalculatorScreen(modifier: Modifier = Modifier) {
                         placeholder = { Text("e.g. 192.168.1.1") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
                     )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         OutlinedTextField(
                             value = prefixInput,
                             onValueChange = {
-                                val intVal = it.toIntOrNull()
-                                if (it.isEmpty() || (intVal != null && intVal in 0..32)) {
-                                    prefixInput = it
+                                prefixInput = it
+                                val cidr = it.toIntOrNull()
+                                if (cidr != null && cidr in 0..32) {
+                                    val maskLong = IPCalculator.cidrToMask(cidr)
+                                    maskInput = IPCalculator.longToIPv4(maskLong)
                                 }
                             },
-                            label = { Text("CIDR Prefix (0-32)") },
-                            modifier = Modifier.width(120.dp),
+                            label = { Text("Prefix (0-32)") },
+                            modifier = Modifier.weight(1f),
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
 
-                        val currentSliderVal = prefixInput.toFloatOrNull() ?: 24f
+                        OutlinedTextField(
+                            value = maskInput,
+                            onValueChange = {
+                                maskInput = it
+                                val cidr = IPCalculator.maskToCidr(it.trim())
+                                if (cidr != null) {
+                                    prefixInput = cidr.toString()
+                                }
+                            },
+                            label = { Text("Subnet Mask") },
+                            modifier = Modifier.weight(2f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                        )
+                    }
+
+                    // Prefix Slider
+                    val sliderVal = prefixInput.toIntOrNull()?.toFloat() ?: 24f
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("CIDR Prefix", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("/${sliderVal.toInt()}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        }
                         Slider(
-                            value = currentSliderVal,
-                            onValueChange = { prefixInput = it.toInt().toString() },
+                            value = sliderVal,
+                            onValueChange = {
+                                val cidr = it.toInt()
+                                prefixInput = cidr.toString()
+                                val maskLong = IPCalculator.cidrToMask(cidr)
+                                maskInput = IPCalculator.longToIPv4(maskLong)
+                            },
                             valueRange = 0f..32f,
-                            modifier = Modifier.weight(1f)
+                            steps = 31
                         )
                     }
                 } else {
+                    // IPv6 Inputs
                     OutlinedTextField(
                         value = ipv6Input,
                         onValueChange = { ipv6Input = it },
                         label = { Text("IPv6 Address") },
                         placeholder = { Text("e.g. 2001:db8::") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+                        singleLine = true
                     )
 
-                    Row(
+                    OutlinedTextField(
+                        value = ipv6PrefixInput,
+                        onValueChange = {
+                            val v = it.toIntOrNull()
+                            if (it.isEmpty() || (v != null && v in 0..128)) {
+                                ipv6PrefixInput = it
+                            }
+                        },
+                        label = { Text("Prefix / CIDR (0-128)") },
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = ipv6PrefixInput,
-                            onValueChange = {
-                                val intVal = it.toIntOrNull()
-                                if (it.isEmpty() || (intVal != null && intVal in 0..128)) {
-                                    ipv6PrefixInput = it
-                                }
-                            },
-                            label = { Text("Prefix (0-128)") },
-                            modifier = Modifier.width(120.dp),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                        )
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
 
-                        val currentSliderVal = ipv6PrefixInput.toFloatOrNull() ?: 64f
+                    val sliderVal = ipv6PrefixInput.toIntOrNull()?.toFloat() ?: 64f
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("IPv6 Prefix Length", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("/${sliderVal.toInt()}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        }
                         Slider(
-                            value = currentSliderVal,
-                            onValueChange = { ipv6PrefixInput = it.toInt().toString() },
+                            value = sliderVal,
+                            onValueChange = {
+                                ipv6PrefixInput = it.toInt().toString()
+                            },
                             valueRange = 0f..128f,
-                            modifier = Modifier.weight(1f)
+                            steps = 127
                         )
                     }
                 }
             }
         }
 
-        // Calculation Results
+        // Calculation Outputs
         if (isIPv4) {
             val prefix = prefixInput.toIntOrNull() ?: 24
             val result = IPCalculator.calculateIPv4(ipInput.trim(), prefix)
 
             if (result != null) {
-                // Results Card
-                ElevatedCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            "Subnet Details",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                // Main results card
+                GlowingCard {
+                    SectionHeader(title = "Calculated Subnet Details")
 
-                        HorizontalDivider()
-
-                        ResultRow("IP Class", result.ipClass, clipboardManager)
-                        ResultRow("IP Type", result.ipType, clipboardManager)
-                        ResultRow("Network Address", "${result.networkAddress}/${result.prefix}", clipboardManager)
-                        ResultRow("Subnet Mask", result.subnetMask, clipboardManager)
-                        ResultRow("Wildcard Mask", result.wildcardMask, clipboardManager)
-                        ResultRow("Broadcast Address", result.broadcastAddress, clipboardManager)
-                        ResultRow("Usable Host Range", "${result.usableRangeStart} - ${result.usableRangeEnd}", clipboardManager)
-                        ResultRow("Usable Hosts", "${result.usableHosts} (Total: ${result.totalHosts})", clipboardManager)
-                    }
+                    ResultRowWithCopy("IP Class", result.ipClass)
+                    ResultRowWithCopy("IP Type", result.ipType)
+                    ResultRowWithCopy("Network Address", "${result.networkAddress}/${result.prefix}")
+                    ResultRowWithCopy("Subnet Mask", result.subnetMask)
+                    ResultRowWithCopy("Wildcard Mask", result.wildcardMask)
+                    ResultRowWithCopy("Broadcast Address", result.broadcastAddress)
+                    ResultRowWithCopy("Usable Host Range", "${result.usableRangeStart} - ${result.usableRangeEnd}")
+                    ResultRowWithCopy("Usable Hosts", "${result.usableHosts} (Total: ${result.totalHosts})")
+                    
+                    val shareText = """
+                        IPv4 Subnet Calculation:
+                        IP Address: ${result.ip}
+                        Prefix: /${result.prefix}
+                        Class: ${result.ipClass}
+                        Type: ${result.ipType}
+                        Network: ${result.networkAddress}
+                        Netmask: ${result.subnetMask}
+                        Wildcard: ${result.wildcardMask}
+                        Broadcast: ${result.broadcastAddress}
+                        Range: ${result.usableRangeStart} - ${result.usableRangeEnd}
+                        Usable Hosts: ${result.usableHosts}
+                    """.trimIndent()
+                    
+                    ActionButtonRow(allResultsText = shareText)
                 }
 
                 // Binary Visualization Card
-                ElevatedCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            "Binary Representation (Network vs Host)",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                GlowingCard {
+                    SectionHeader(title = "Binary Representation (Network vs Host)")
 
-                        HorizontalDivider()
-
-                        BinaryRow("IP Address", result.ipBinary, result.prefix)
-                        BinaryRow("Subnet Mask", result.maskBinary, result.prefix)
-                        BinaryRow("Network Addr", result.networkBinary, result.prefix)
-                        BinaryRow("Broadcast", result.broadcastBinary, result.prefix)
-                    }
+                    BinaryRow("IP Address", result.ipBinary, result.prefix)
+                    BinaryRow("Subnet Mask", result.maskBinary, result.prefix)
+                    BinaryRow("Network Addr", result.networkBinary, result.prefix)
+                    BinaryRow("Broadcast", result.broadcastBinary, result.prefix)
                 }
             } else {
                 Text(
@@ -252,31 +278,28 @@ fun SubnetCalculatorScreen(modifier: Modifier = Modifier) {
             val result = IPCalculator.calculateIPv6(ipv6Input.trim(), prefix)
 
             if (result != null) {
-                ElevatedCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            "Subnet Details",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                GlowingCard {
+                    SectionHeader(title = "Calculated IPv6 Details")
 
-                        HorizontalDivider()
-
-                        ResultRow("IP Type", result.type, clipboardManager)
-                        ResultRow("Compressed IP", result.compressed, clipboardManager)
-                        ResultRow("Expanded IP", result.expanded, clipboardManager)
-                        ResultRow("Network Address", "${result.networkAddress}/${result.prefix}", clipboardManager)
-                        ResultRow("Range Start", result.rangeStart, clipboardManager)
-                        ResultRow("Range End", result.rangeEnd, clipboardManager)
-                        ResultRow("Total Hosts", result.totalHosts, clipboardManager)
-                    }
+                    ResultRowWithCopy("IP Type", result.type)
+                    ResultRowWithCopy("Compressed IP", result.compressed)
+                    ResultRowWithCopy("Expanded IP", result.expanded)
+                    ResultRowWithCopy("Network Address", "${result.networkAddress}/${result.prefix}")
+                    ResultRowWithCopy("Range Start", result.rangeStart)
+                    ResultRowWithCopy("Range End", result.rangeEnd)
+                    ResultRowWithCopy("Total Hosts", result.totalHosts)
+                    
+                    val shareText = """
+                        IPv6 Subnet Calculation:
+                        IP Address: ${result.ip}
+                        Prefix: /${result.prefix}
+                        Type: ${result.type}
+                        Network: ${result.networkAddress}
+                        Range: ${result.rangeStart} - ${result.rangeEnd}
+                        Total Hosts: ${result.totalHosts}
+                    """.trimIndent()
+                    
+                    ActionButtonRow(allResultsText = shareText)
                 }
             } else {
                 Text(
@@ -285,43 +308,6 @@ fun SubnetCalculatorScreen(modifier: Modifier = Modifier) {
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
             }
-        }
-    }
-}
-
-@Composable
-fun ResultRow(
-    label: String,
-    value: String,
-    clipboardManager: androidx.compose.ui.platform.ClipboardManager
-) {
-    val context = LocalContext.current
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = value,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-        
-        TextButton(
-            onClick = {
-                clipboardManager.setText(AnnotatedString(value))
-                Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
-            }
-        ) {
-            Text("Copy", fontSize = 12.sp)
         }
     }
 }
