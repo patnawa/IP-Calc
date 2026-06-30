@@ -13,7 +13,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import com.example.ipcalculator.theme.ThemeController
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,8 +24,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ipcalculator.AppLanguage
 import com.example.ipcalculator.Translator
-import com.example.ipcalculator.ui.components.GlowingCard
+import com.example.ipcalculator.theme.ThemeController
 import com.example.ipcalculator.ui.screens.*
+import com.example.ipcalculator.ui.components.GlowingCard
 
 sealed class Screen(val key: String, val icon: ImageVector, val category: String) {
     object Subnet : Screen("subnet", Icons.Default.Settings, "cat_design")
@@ -65,6 +65,12 @@ fun MainScreen(
 
     var activeScreenKey by rememberSaveable { mutableStateOf<String?>(null) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    
+    // Category Expandable States
+    var designExpanded by rememberSaveable { mutableStateOf(true) }
+    var diagExpanded by rememberSaveable { mutableStateOf(true) }
+    var convExpanded by rememberSaveable { mutableStateOf(true) }
+    var learnExpanded by rememberSaveable { mutableStateOf(true) }
     
     val activeScreen = allScreens.find { it.key == activeScreenKey }
 
@@ -136,7 +142,15 @@ fun MainScreen(
                         screens = allScreens,
                         searchQuery = searchQuery,
                         onSearchChange = { searchQuery = it },
-                        onScreenClick = { activeScreenKey = it.key }
+                        onScreenClick = { activeScreenKey = it.key },
+                        designExpanded = designExpanded,
+                        onDesignToggle = { designExpanded = it },
+                        diagExpanded = diagExpanded,
+                        onDiagToggle = { diagExpanded = it },
+                        convExpanded = convExpanded,
+                        onConvToggle = { convExpanded = it },
+                        learnExpanded = learnExpanded,
+                        onLearnToggle = { learnExpanded = it }
                     )
                 } else {
                     when (screen) {
@@ -169,7 +183,15 @@ fun DashboardView(
     screens: List<Screen>,
     searchQuery: String,
     onSearchChange: (String) -> Unit,
-    onScreenClick: (Screen) -> Unit
+    onScreenClick: (Screen) -> Unit,
+    designExpanded: Boolean,
+    onDesignToggle: (Boolean) -> Unit,
+    diagExpanded: Boolean,
+    onDiagToggle: (Boolean) -> Unit,
+    convExpanded: Boolean,
+    onConvToggle: (Boolean) -> Unit,
+    learnExpanded: Boolean,
+    onLearnToggle: (Boolean) -> Unit
 ) {
     val filteredScreens = screens.filter {
         val title = Translator.t(it.key).lowercase()
@@ -177,7 +199,7 @@ fun DashboardView(
         title.contains(searchQuery.lowercase()) || category.contains(searchQuery.lowercase())
     }
 
-    val categories = listOf("cat_design", "cat_diag", "cat_conv", "cat_learn")
+    val isSearching = searchQuery.isNotEmpty()
 
     Column(
         modifier = Modifier
@@ -185,22 +207,44 @@ fun DashboardView(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Dynamic search input
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = onSearchChange,
-            placeholder = { Text("Search tools...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Dynamic search input
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchChange,
+                placeholder = { Text("Search tools...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                )
             )
-        )
+
+            // Expand/Collapse All Toggle Button
+            IconButton(
+                onClick = {
+                    val target = !(designExpanded || diagExpanded || convExpanded || learnExpanded)
+                    onDesignToggle(target)
+                    onDiagToggle(target)
+                    onConvToggle(target)
+                    onLearnToggle(target)
+                }
+            ) {
+                Icon(
+                    imageVector = if (designExpanded || diagExpanded || convExpanded || learnExpanded) Icons.Default.UnfoldLess else Icons.Default.UnfoldMore,
+                    contentDescription = "Toggle All Categories"
+                )
+            }
+        }
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
@@ -209,22 +253,51 @@ fun DashboardView(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            categories.forEach { catKey ->
+            val categories = listOf(
+                Triple("cat_design", designExpanded, onDesignToggle),
+                Triple("cat_diag", diagExpanded, onDiagToggle),
+                Triple("cat_conv", convExpanded, onConvToggle),
+                Triple("cat_learn", learnExpanded, onLearnToggle)
+            )
+
+            categories.forEach { (catKey, isExpanded, onToggle) ->
                 val catScreens = filteredScreens.filter { it.category == catKey }
                 if (catScreens.isNotEmpty()) {
+                    val finalExpanded = if (isSearching) true else isExpanded
+
                     // Category Header span all 2 columns
                     item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
-                        Text(
-                            text = Translator.t(catKey),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                        )
+                        ElevatedCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp, bottom = 4.dp)
+                                .clickable { onToggle(!isExpanded) }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = Translator.t(catKey),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Icon(
+                                    imageVector = if (finalExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Toggle Category"
+                                )
+                            }
+                        }
                     }
 
-                    items(catScreens) { screen ->
-                        ToolCard(screen = screen, onClick = { onScreenClick(screen) })
+                    if (finalExpanded) {
+                        items(catScreens) { screen ->
+                            ToolCard(screen = screen, onClick = { onScreenClick(screen) })
+                        }
                     }
                 }
             }
