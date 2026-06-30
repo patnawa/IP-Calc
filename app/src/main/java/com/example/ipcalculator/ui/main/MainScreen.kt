@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.example.ipcalculator.theme.ThemeController
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,9 +96,24 @@ fun MainScreen(
                                 contentDescription = "Go Back"
                             )
                         }
+                    } else {
+                        IconButton(onClick = { ThemeController.isDarkTheme = !ThemeController.isDarkTheme }) {
+                            Icon(
+                                imageVector = if (ThemeController.isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                                contentDescription = "Toggle Theme"
+                            )
+                        }
                     }
                 },
                 actions = {
+                    if (activeScreen != null) {
+                        IconButton(onClick = { ThemeController.isDarkTheme = !ThemeController.isDarkTheme }) {
+                            Icon(
+                                imageVector = if (ThemeController.isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                                contentDescription = "Toggle Theme"
+                            )
+                        }
+                    }
                     LanguageSelectorDropdown()
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(

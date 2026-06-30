@@ -8,6 +8,9 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
@@ -43,9 +46,13 @@ private val LightColorScheme = lightColorScheme(
     outline = Color(0xFFE2E8F0)
 )
 
+object ThemeController {
+    var isDarkTheme by mutableStateOf(true)
+}
+
 @Composable
 fun IPCalculatorTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = ThemeController.isDarkTheme,
     // Set default to false to force our beautiful handcrafted theme instead of generic dynamic Android colors
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
