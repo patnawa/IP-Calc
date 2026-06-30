@@ -116,14 +116,7 @@ fun LanguageSelectorDropdown() {
     
     Box {
         IconButton(onClick = { expanded = true }) {
-            // Using standard search/info icon if language icon is not in core, but since we have extended it's safe.
-            // Let's use Icons.Default.Refresh or similar to be absolutely safe, or Icons.Default.Info.
-            // Let's use Icons.Default.Refresh as it represents "Switch/Translate" nicely, or just look up if Language exists.
-            // Actually, Icons.Default.Refresh is a very safe standard icon. Let's use Refresh or similar if we want.
-            // Wait, does core have Settings or List? Let's use a standard globe or menu icon.
-            // Actually, Icons.Default.Build or Icons.Default.Settings can act as language/options button.
-            // Let's use Icons.Default.Refresh since it represents switching.
-            Icon(imageVector = Icons.Default.Refresh, contentDescription = "Language")
+            Icon(imageVector = Icons.Default.Translate, contentDescription = "Language")
         }
         
         DropdownMenu(

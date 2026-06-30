@@ -90,16 +90,12 @@ fun AboutScreen(modifier: Modifier = Modifier) {
                 ChangelogItem(
                     version = "v2.0.0 (2026-06-30)",
                     changes = listOf(
-                        "Interactive Subnetting Quiz: CCNA/Network+ practice mode with score/streak tracking and detailed explanations.",
-                        "Visual IP Allocation Map: Visual progress bar in VLSM displaying allocated vs unallocated space.",
-                        "IPv6 EUI-64 Generator: Converts MAC Address and Prefix to EUI-64 address with step-by-step logic.",
-                        "MAC Vendor OUI Lookup: Resolves manufacturer details and converts MAC format representations.",
-                        "Searchable TCP/UDP Common Ports: Interactive chip-filterable ports cheat sheet.",
-                        "Searchable CIDR Prefix Chart: Scrollable cheat sheet for /0 to /32 ranges.",
-                        "Subnet Containment Checker: Verifies IP address subnet boundaries.",
-                        "Side-by-side Subnet Comparison: Dual comparison card showing overlap and containment status.",
-                        "Improved layout rotation: All states saved in rememberSaveable.",
-                        "Critical bugs fixed: IPv6 compression :: edge cases, validation logic, and VLSM integer overflow."
+                        "Interactive Subnetting Quiz: CCNA/Network+ practice mode with score/streak tracking & answers explanation.",
+                        "Interactive IP Allocation Map: Visual progress bar in VLSM displaying allocated subnets & free space.",
+                        "New Localized Developer Tools: IPv6 EUI-64 generator, MAC OUI Registry Lookup, CIDR chart, Port cheat sheet, IP Subnet Checker & Comparator.",
+                        "Global Multi-Language Switching: Instant translation switcher supporting EN, TH, ES, ZH, JA, DE, FR.",
+                        "Visual Polish & Bug Fixes: Corrected screen overlapping padding, fixed IPv6 zero runs, validation logic, and VLSM integer overflow.",
+                        "Premium App Icon: Sleek 3D isometric glowing network node grid icon."
                     )
                 )
 
