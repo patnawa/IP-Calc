@@ -1,35 +1,53 @@
 package com.example.ipcalculator.ui.main
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.ipcalculator.AppLanguage
 import com.example.ipcalculator.Translator
+import com.example.ipcalculator.ui.components.GlowingCard
 import com.example.ipcalculator.ui.screens.*
 
-sealed class Tab(val key: String, val icon: ImageVector) {
-    object Subnet : Tab("subnet", Icons.Default.Settings)
-    object Vlsm : Tab("vlsm", Icons.Default.Add)
-    object Converter : Tab("converter", Icons.Default.Refresh)
-    object Supernet : Tab("supernet", Icons.Default.Home)
-    object CidrChart : Tab("cidr_chart", Icons.Default.List)
-    object IpChecker : Tab("ip_checker", Icons.Default.Check)
-    object Compare : Tab("compare", Icons.Default.Warning)
-    object Ports : Tab("ports", Icons.Default.Build)
-    object Eui64 : Tab("eui64", Icons.Default.Send)
-    object MacLookup : Tab("mac_oui", Icons.Default.Search)
-    object Quiz : Tab("quiz", Icons.Default.Star)
-    object About : Tab("about", Icons.Default.Info)
+sealed class Screen(val key: String, val icon: ImageVector, val category: String) {
+    object Subnet : Screen("subnet", Icons.Default.Settings, "cat_design")
+    object Vlsm : Screen("vlsm", Icons.Default.Add, "cat_design")
+    object Supernet : Screen("supernet", Icons.Default.Home, "cat_design")
+    object DesignWizard : Screen("design_wizard", Icons.Default.Build, "cat_design")
+    
+    object PingScan : Screen("ping_scan", Icons.Default.PlayArrow, "cat_diag")
+    object DnsWhois : Screen("dns_whois", Icons.Default.Search, "cat_diag")
+    object IpChecker : Screen("ip_checker", Icons.Default.Check, "cat_diag")
+    object Compare : Screen("compare", Icons.Default.Warning, "cat_diag")
+    
+    object Converter : Screen("converter", Icons.Default.Refresh, "cat_conv")
+    object Eui64 : Screen("eui64", Icons.Default.Send, "cat_conv")
+    object MacLookup : Screen("mac_oui", Icons.Default.Search, "cat_conv")
+    object CiscoAcl : Screen("cisco_acl", Icons.Default.Lock, "cat_conv")
+    
+    object Quiz : Screen("quiz", Icons.Default.Star, "cat_learn")
+    object CheatSheets : Screen("cheat_sheets", Icons.Default.List, "cat_learn")
+    object CidrChart : Screen("cidr_chart", Icons.Default.Menu, "cat_learn")
+    object Ports : Screen("ports", Icons.Default.Share, "cat_learn")
+    object About : Screen("about", Icons.Default.Info, "cat_learn")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,52 +55,58 @@ sealed class Tab(val key: String, val icon: ImageVector) {
 fun MainScreen(
     modifier: Modifier = Modifier
 ) {
-    val tabs = listOf(
-        Tab.Subnet, Tab.Vlsm, Tab.Converter, Tab.Supernet,
-        Tab.CidrChart, Tab.IpChecker, Tab.Compare, Tab.Ports,
-        Tab.Eui64, Tab.MacLookup, Tab.Quiz, Tab.About
+    val allScreens = listOf(
+        Screen.Subnet, Screen.Vlsm, Screen.Supernet, Screen.DesignWizard,
+        Screen.PingScan, Screen.DnsWhois, Screen.IpChecker, Screen.Compare,
+        Screen.Converter, Screen.Eui64, Screen.MacLookup, Screen.CiscoAcl,
+        Screen.Quiz, Screen.CheatSheets, Screen.CidrChart, Screen.Ports, Screen.About
     )
+
+    var activeScreenKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
     
-    var selectedTabIndex by rememberSaveable { mutableStateOf(0) }
-    val selectedTab = tabs[selectedTabIndex]
+    val activeScreen = allScreens.find { it.key == activeScreenKey }
+
+    // System Back Press Handler
+    if (activeScreen != null) {
+        BackHandler {
+            activeScreenKey = null
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            Column {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            text = Translator.t("app_title"),
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                    },
-                    actions = {
-                        LanguageSelectorDropdown()
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.primary
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = if (activeScreen != null) Translator.t(activeScreen.key) else Translator.t("app_title"),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                )
-                
-                // Scrollable tab row underneath the title bar
-                ScrollableTabRow(
-                    selectedTabIndex = selectedTabIndex,
-                    edgePadding = 16.dp,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary
-                ) {
-                    tabs.forEachIndexed { index, tab ->
-                        Tab(
-                            selected = selectedTabIndex == index,
-                            onClick = { selectedTabIndex = index },
-                            icon = { Icon(imageVector = tab.icon, contentDescription = Translator.t(tab.key)) },
-                            text = { Text(Translator.t(tab.key)) }
-                        )
+                },
+                navigationIcon = {
+                    if (activeScreen != null) {
+                        IconButton(onClick = { activeScreenKey = null }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Go Back"
+                            )
+                        }
                     }
-                }
-            }
+                },
+                actions = {
+                    LanguageSelectorDropdown()
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.primary
+                )
+            )
         }
     ) { innerPadding ->
         Box(
@@ -90,22 +114,136 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Crossfade(targetState = selectedTab, label = "tabCrossfade") { tab ->
-                when (tab) {
-                    Tab.Subnet -> SubnetCalculatorScreen()
-                    Tab.Vlsm -> VlsmCalculatorScreen()
-                    Tab.Converter -> IpConverterScreen()
-                    Tab.Supernet -> SupernettingScreen()
-                    Tab.CidrChart -> CidrReferenceScreen()
-                    Tab.IpChecker -> IpCheckerScreen()
-                    Tab.Compare -> SubnetCompareScreen()
-                    Tab.Ports -> CommonPortsScreen()
-                    Tab.Eui64 -> Eui64Screen()
-                    Tab.MacLookup -> MacLookupScreen()
-                    Tab.Quiz -> QuizScreen()
-                    Tab.About -> AboutScreen()
+            Crossfade(targetState = activeScreen, label = "screenCrossfade") { screen ->
+                if (screen == null) {
+                    DashboardView(
+                        screens = allScreens,
+                        searchQuery = searchQuery,
+                        onSearchChange = { searchQuery = it },
+                        onScreenClick = { activeScreenKey = it.key }
+                    )
+                } else {
+                    when (screen) {
+                        Screen.Subnet -> SubnetCalculatorScreen()
+                        Screen.Vlsm -> VlsmCalculatorScreen()
+                        Screen.Supernet -> SupernettingScreen()
+                        Screen.DesignWizard -> DesignWizardScreen()
+                        Screen.PingScan -> PingScannerScreen()
+                        Screen.DnsWhois -> DnsLookupScreen()
+                        Screen.IpChecker -> IpCheckerScreen()
+                        Screen.Compare -> SubnetCompareScreen()
+                        Screen.Converter -> IpConverterScreen()
+                        Screen.Eui64 -> Eui64Screen()
+                        Screen.MacLookup -> MacLookupScreen()
+                        Screen.CiscoAcl -> AclGeneratorScreen()
+                        Screen.Quiz -> QuizScreen()
+                        Screen.CheatSheets -> CheatSheetsScreen()
+                        Screen.CidrChart -> CidrReferenceScreen()
+                        Screen.Ports -> CommonPortsScreen()
+                        Screen.About -> AboutScreen()
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun DashboardView(
+    screens: List<Screen>,
+    searchQuery: String,
+    onSearchChange: (String) -> Unit,
+    onScreenClick: (Screen) -> Unit
+) {
+    val filteredScreens = screens.filter {
+        val title = Translator.t(it.key).lowercase()
+        val category = Translator.t(it.category).lowercase()
+        title.contains(searchQuery.lowercase()) || category.contains(searchQuery.lowercase())
+    }
+
+    val categories = listOf("cat_design", "cat_diag", "cat_conv", "cat_learn")
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Dynamic search input
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onSearchChange,
+            placeholder = { Text("Search tools...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+            )
+        )
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            categories.forEach { catKey ->
+                val catScreens = filteredScreens.filter { it.category == catKey }
+                if (catScreens.isNotEmpty()) {
+                    // Category Header span all 2 columns
+                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+                        Text(
+                            text = Translator.t(catKey),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        )
+                    }
+
+                    items(catScreens) { screen ->
+                        ToolCard(screen = screen, onClick = { onScreenClick(screen) })
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ToolCard(screen: Screen, onClick: () -> Unit) {
+    GlowingCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = screen.icon,
+                contentDescription = Translator.t(screen.key),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
+            )
+            Text(
+                text = Translator.t(screen.key),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

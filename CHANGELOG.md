@@ -2,6 +2,16 @@
 
 All notable changes to the IP Calculator Suite project will be documented in this file.
 
+## [2.1.0] - 2026-06-30
+### Added
+- **Searchable Dashboard Grid**: Replaced the horizontal tabs navigation with a modern categorized launcher dashboard with dynamic search filtering.
+- **Cisco ACL Generator**: Generates wildcard masks and Cisco IOS ACL permit/deny command snippets dynamically.
+- **Ping & Subnet Sweep Scanner**: Run single ICMP/TCP pings with latency logs, or scan/sweep an entire subnet range concurrently using coroutines to detect online hosts.
+- **DNS Resolver & WHOIS Query**: Lookup DNS records (A, AAAA, MX, NS, CNAME, TXT) via Google DoH, and WHOIS registration info via RDAP endpoints.
+- **Network Design Wizard**: Interactive subnet planner using pre-configured layout templates (Corporate Office, Startup, Smart Home).
+- **Interactive Cheat Sheets**: Study guides for the 7-layer OSI Model, T568A/T568B RJ-45 Ethernet wiring color codes, IPv4/IPv6 packet headers, and TIA-598 fiber codes.
+- **Expanded Translations**: Broadened localization database to support 14 global languages including Japanese (JA) and Korean (KO).
+
 ## [2.0.0] - 2026-06-30
 ### Added
 - **Global Multi-Language Switcher**: Integrated a dynamic translation engine supporting English, Thai, Spanish, Chinese, Japanese, German, and French, with an instant top app bar dropdown toggler.

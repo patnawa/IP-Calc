@@ -88,12 +88,25 @@ fun AboutScreen(modifier: Modifier = Modifier) {
                 HorizontalDivider()
 
                 ChangelogItem(
+                    version = "v2.1.0 (2026-06-30)",
+                    changes = listOf(
+                        "Searchable Dashboard Launcher: Redesigned navigation into a categorized grid dashboard with a dynamic tools search filter.",
+                        "New Advanced Core Tools: Cisco IOS ACL & Wildcard generator, Single Ping log console, and concurrent Subnet Sweep IP Scanner.",
+                        "DNS DoH & WHOIS RDAP Query: Direct A/AAAA/MX/TXT record resolution and domain registration date/ownership details.",
+                        "Subnet Design Templates: Wizard to auto-generate VLSM layouts for Corporate Offices, Startups, and Smart Homes.",
+                        "Reference Cheat Sheets: 7-layer OSI Model card guide, RJ-45 Ethernet wiring pin colors, IP Packet Headers structure, and fiber color codes.",
+                        "Super Multi-Language: Dynamic translation database expanded to 14 languages, including Japanese (JA) and Korean (KO)."
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                ChangelogItem(
                     version = "v2.0.0 (2026-06-30)",
                     changes = listOf(
                         "Interactive Subnetting Quiz: CCNA/Network+ practice mode with score/streak tracking & answers explanation.",
                         "Interactive IP Allocation Map: Visual progress bar in VLSM displaying allocated subnets & free space.",
                         "New Localized Developer Tools: IPv6 EUI-64 generator, MAC OUI Registry Lookup, CIDR chart, Port cheat sheet, IP Subnet Checker & Comparator.",
-                        "Global Multi-Language Switching: Instant translation switcher supporting EN, TH, ES, ZH, JA, DE, FR.",
                         "Visual Polish & Bug Fixes: Corrected screen overlapping padding, fixed IPv6 zero runs, validation logic, and VLSM integer overflow.",
                         "Premium App Icon: Sleek 3D isometric glowing network node grid icon."
                     )

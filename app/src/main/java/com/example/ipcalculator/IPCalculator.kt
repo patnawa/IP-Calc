@@ -850,4 +850,65 @@ object IPCalculator {
             "raw" to rawForm
         )
     }
+
+    fun calculateWildcard(prefix: Int): String {
+        if (prefix !in 0..32) return "255.255.255.255"
+        val maskLong = cidrToMask(prefix)
+        val wildcardLong = maskLong.inv() and 0xFFFFFFFFL
+        return longToIPv4(wildcardLong)
+    }
+
+    fun generateCiscoAcl(
+        network: String,
+        prefix: Int,
+        action: String,
+        protocol: String,
+        destType: String,
+        destIp: String
+    ): String {
+        val wildcard = calculateWildcard(prefix)
+        val act = action.lowercase(Locale.ROOT)
+        val proto = protocol.lowercase(Locale.ROOT)
+        val srcPart = "$network $wildcard"
+        val destPart = when (destType.lowercase(Locale.ROOT)) {
+            "any" -> "any"
+            "host" -> "host $destIp"
+            else -> destIp
+        }
+        return "access-list 101 $act $proto $srcPart $destPart"
+    }
+
+    fun queryDnsOverHttps(domain: String, type: String): String {
+        return try {
+            val url = java.net.URL("https://dns.google/resolve?name=${domain}&type=${type}")
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.connectTimeout = 3000
+            conn.readTimeout = 3000
+            if (conn.responseCode == 200) {
+                conn.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                "Error: HTTP ${conn.responseCode}"
+            }
+        } catch (e: Exception) {
+            "Error: ${e.message}"
+        }
+    }
+
+    fun queryWhoisRdap(domain: String): String {
+        return try {
+            val url = java.net.URL("https://rdap.org/domain/${domain}")
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.connectTimeout = 4000
+            conn.readTimeout = 4000
+            if (conn.responseCode == 200) {
+                conn.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                "Error: HTTP ${conn.responseCode}"
+            }
+        } catch (e: Exception) {
+            "Error: ${e.message}"
+        }
+    }
 }

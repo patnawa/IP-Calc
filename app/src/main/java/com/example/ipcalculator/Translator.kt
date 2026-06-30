@@ -42,6 +42,69 @@ object Translator {
             AppLanguage.AR to "حزمة حاسبة IP",
             AppLanguage.IT to "Calcolatore IP"
         ),
+        "cisco_acl" to mapOf(
+            AppLanguage.EN to "Cisco ACL", AppLanguage.TH to "คำสั่ง Cisco ACL", AppLanguage.ES to "ACL de Cisco",
+            AppLanguage.ZH to "思科 ACL", AppLanguage.JA to "Cisco ACL", AppLanguage.KO to "Cisco ACL",
+            AppLanguage.DE to "Cisco ACL", AppLanguage.FR to "ACL Cisco", AppLanguage.RU to "Cisco ACL",
+            AppLanguage.PT to "Cisco ACL", AppLanguage.HI to "सिस्को ACL", AppLanguage.VI to "Cisco ACL",
+            AppLanguage.AR to "Cisco ACL", AppLanguage.IT to "Cisco ACL"
+        ),
+        "ping_scan" to mapOf(
+            AppLanguage.EN to "Ping & Scanner", AppLanguage.TH to "ปิงและสแกนเนอร์", AppLanguage.ES to "Ping y Escáner",
+            AppLanguage.ZH to "Ping 和扫描仪", AppLanguage.JA to "Pingとスキャナー", AppLanguage.KO to "핑 및 스캐너",
+            AppLanguage.DE to "Ping & Scanner", AppLanguage.FR to "Ping & Scanner", AppLanguage.RU to "Пинг и Сканер",
+            AppLanguage.PT to "Ping e Scanner", AppLanguage.HI to "पिंग और Scanner", AppLanguage.VI to "Ping & Máy quét",
+            AppLanguage.AR to "فحص وتحديد الاتصال", AppLanguage.IT to "Ping e Scanner"
+        ),
+        "dns_whois" to mapOf(
+            AppLanguage.EN to "DNS & Whois", AppLanguage.TH to "สืบค้น DNS/Whois", AppLanguage.ES to "DNS y Whois",
+            AppLanguage.ZH to "DNS 和 Whois", AppLanguage.JA to "DNSとWhois", AppLanguage.KO to "DNS 및 Whois",
+            AppLanguage.DE to "DNS & Whois", AppLanguage.FR to "DNS & Whois", AppLanguage.RU to "DNS и Whois",
+            AppLanguage.PT to "DNS e Whois", AppLanguage.HI to "डीएनएस और व्हूइस", AppLanguage.VI to "DNS & Whois",
+            AppLanguage.AR to "DNS و Whois", AppLanguage.IT to "DNS e Whois"
+        ),
+        "design_wizard" to mapOf(
+            AppLanguage.EN to "Design Wizard", AppLanguage.TH to "ออกแบบซับเน็ตด่วน", AppLanguage.ES to "Plantillas de red",
+            AppLanguage.ZH to "设计向导", AppLanguage.JA to "設計ウィザード", AppLanguage.KO to "설계 마법사",
+            AppLanguage.DE to "Design-Assistent", AppLanguage.FR to "Assistant de design", AppLanguage.RU to "Мастер дизайна",
+            AppLanguage.PT to "Assistente de Design", AppLanguage.HI to "डिजाइन विज़ार्ड", AppLanguage.VI to "Thiết kế mạng",
+            AppLanguage.AR to "معالج التصميم", AppLanguage.IT to "Assistente di design"
+        ),
+        "cheat_sheets" to mapOf(
+            AppLanguage.EN to "Cheat Sheets", AppLanguage.TH to "คลังความรู้เครือข่าย", AppLanguage.ES to "Fichas didácticas",
+            AppLanguage.ZH to "备忘单", AppLanguage.JA to "チートシート", AppLanguage.KO to "요약시트",
+            AppLanguage.DE to "Spickzettel", AppLanguage.FR to "Fiches mémo", AppLanguage.RU to "Шпаргалки",
+            AppLanguage.PT to "Fichas de Resumo", AppLanguage.HI to "चीट शीट्स", AppLanguage.VI to "Tài liệu tóm tắt",
+            AppLanguage.AR to "ملخصات سريعة", AppLanguage.IT to "Schede riassuntive"
+        ),
+        "cat_design" to mapOf(
+            AppLanguage.EN to "Subnetting & Design", AppLanguage.TH to "การออกแบบและการแบ่งซับเน็ต", AppLanguage.ES to "Diseño y Subredes",
+            AppLanguage.ZH to "子网划分与设计", AppLanguage.JA to "サブネット設計", AppLanguage.KO to "서브넷 설계 및 디자인",
+            AppLanguage.DE to "Subnetzierung & Design", AppLanguage.FR to "Sous-réseautage & Design", AppLanguage.RU to "Дизайн и Подсети",
+            AppLanguage.PT to "Sub-rede & Design", AppLanguage.HI to "सबनेटिंग और डिजाइन", AppLanguage.VI to "Thiết kế & Phân mạng",
+            AppLanguage.AR to "تقسيم الشبكات والتصميم", AppLanguage.IT to "Sottoreti e Design"
+        ),
+        "cat_diag" to mapOf(
+            AppLanguage.EN to "Diagnostics & Tools", AppLanguage.TH to "เครื่องมือและการวินิจฉัย", AppLanguage.ES to "Diagnósticos y Herramientas",
+            AppLanguage.ZH to "诊断与工具", AppLanguage.JA to "診断とツール", AppLanguage.KO to "진단 및 네트워크 도구",
+            AppLanguage.DE to "Diagnose & Tools", AppLanguage.FR to "Diagnostics & Outils", AppLanguage.RU to "Диагностика и Инструменты",
+            AppLanguage.PT to "Diagnóstico & Ferramentas", AppLanguage.HI to "निदान और उपकरण", AppLanguage.VI to "Chẩn đoán & Công cụ",
+            AppLanguage.AR to "التشخيص والأدوات", AppLanguage.IT to "Diagnostica e Strumenti"
+        ),
+        "cat_conv" to mapOf(
+            AppLanguage.EN to "Converters & Coding", AppLanguage.TH to "การแปลงและการเขียนโค้ด", AppLanguage.ES to "Conversores y Codificación",
+            AppLanguage.ZH to "转换与编码", AppLanguage.JA to "変換とコーディング", AppLanguage.KO to "변환 및 코딩",
+            AppLanguage.DE to "Konverter & Codierung", AppLanguage.FR to "Convertisseurs & Codage", AppLanguage.RU to "Конвертеры и Кодирование",
+            AppLanguage.PT to "Conversores & Codificação", AppLanguage.HI to "कनवर्टर्स और कोडिंग", AppLanguage.VI to "Chuyển đổi & Mã hóa",
+            AppLanguage.AR to "المحولات والترميز", AppLanguage.IT to "Convertitori e Codifiche"
+        ),
+        "cat_learn" to mapOf(
+            AppLanguage.EN to "Reference & Learning", AppLanguage.TH to "แหล่งความรู้และการเรียนรู้", AppLanguage.ES to "Referencia y Aprendizaje",
+            AppLanguage.ZH to "参考与学习", AppLanguage.JA to "参照と学習", AppLanguage.KO to "참조 및 교육 자료",
+            AppLanguage.DE to "Referenz & Lernen", AppLanguage.FR to "Référence & Apprentissage", AppLanguage.RU to "Справочники и Обучение",
+            AppLanguage.PT to "Referência & Aprendizagem", AppLanguage.HI to "संदर्भ और सीखना", AppLanguage.VI to "Tài liệu & Học tập",
+            AppLanguage.AR to "المراجع والتعليم", AppLanguage.IT to "Riferimenti e Apprendimento"
+        ),
         "subnet" to mapOf(
             AppLanguage.EN to "Subnet", AppLanguage.TH to "ซับเน็ต", AppLanguage.ES to "Subred",
             AppLanguage.ZH to "子网", AppLanguage.JA to "サブネット", AppLanguage.KO to "서브넷",

@@ -1,49 +1,50 @@
-# IP Calculator Suite
+# IP Calculator Suite (Swiss Army Knife Network Utility)
 
-IP Calculator Suite is a feature-rich, modern Android application designed for network engineers, administrators, and students. Built with Jetpack Compose and Material 3, it offers an elegant dark-theme design with a complete set of subnetting, conversion, and summarization tools.
+IP Calculator Suite is a feature-rich, high-performance Android application designed for network engineers, administrators, and students. Built with Jetpack Compose and Material 3, it offers an elegant dark-theme design with a complete set of subnetting, diagnostics, generation, and learning tools.
 
-## Features
+---
 
-1. **IPv4 & IPv6 Subnet Calculator**
-   - Calculate network addresses, broadcast addresses, usable host ranges, and total host capacities.
-   - Dynamic CIDR prefix adjustments using sliders and text fields.
-   - Subnet mask input fields that automatically synchronize with CIDR prefixes.
-   - Dotted-binary viewer highlighting network and host bits (Network in Cyan, Host in Pink).
+## Navigation & Architecture
+To accommodate 17 distinct functional modules without cluttering the interface, the app features a **Searchable Dashboard Grid** home launcher. Users can browse tools by logical categories or search for any tool dynamically (e.g., typing "ping" or "acl" instantly highlights the matching tool). 
 
-2. **VLSM & FLSM Subnetter**
-   - **VLSM**: Allocate variable host requirements in descending order.
-   - **FLSM**: Divide a base network into a fixed number of equal subnets.
-   - **Visual IP Map (New!)**: Interactive horizontal bar representing allocated subnets and remaining free address space.
+Each tool page is isolated and features system back-press handling to return to the dashboard smoothly. The top app bar hosts a **Global Multi-Language Selector** visible on every page.
 
-3. **Subnetting Quiz (New!)**
-   - Interactive training mode for CCNA and Network+ exams.
-   - Multi-choice questions covering networks, broadcasts, host counts, and wildcards.
-   - Scoreboards, streak trackers, and detailed explanations of calculations.
+---
 
-4. **IPv6 EUI-64 Generator (New!)**
-   - Derive an IPv6 address from a MAC Address using the EUI-64 standard.
-   - Step-by-step educational breakdown of the bitwise calculation.
+## Featured Tools (17 Modules)
 
-5. **MAC Vendor Lookup (New!)**
-   - Find the manufacturer (vendor) of a network card from its OUI registry.
-   - Convert MAC addresses between colon, hyphen, dot, and raw hex formats.
+### 1. Subnetting & Design
+- **IPv4 & IPv6 Subnet Calculator**: Calculate addresses, usable host ranges, binary representations, classes, and types.
+- **VLSM/FLSM Planner**: Plan subnets dynamically based on host requirements or a fixed number of segments.
+- **Visual IP Map**: A visual horizontal block bar representing VLSM allocated space, utilization, and wasted space.
+- **Subnet Design Template Wizard (New!)**: Choose templates like "Corporate Office", "Startup Tech Office", or "Smart Home" to auto-generate a complete subnet configuration instantly.
+- **Route Summarizer (Supernetting)**: Combine multiple IP subnets into a single optimized route block.
 
-6. **Cheat Sheets (New!)**
-   - **CIDR Prefix Chart**: Cheat sheet listing all prefix ranges (/0 to /32) with hosts and wildcard details.
-   - **TCP/UDP Common Ports**: Searchable and filterable reference of well-known network ports.
-   - **IP Subnet Containment Checker**: Verify if a target IP falls inside a subnet range.
-   - **Subnet Comparison**: Side-by-side comparative table of two subnets detecting conflicts and containment.
+### 2. Diagnostics & Verification
+- **Ping & Subnet Sweep Scanner (New!)**: A multi-tab diagnostics tool. Run single host ICMP/TCP pings with latency logs, or scan/sweep an entire subnet range concurrently using coroutines to detect online devices.
+- **DNS Resolver & WHOIS Query (New!)**: Resolve DNS records (A, AAAA, MX, NS, CNAME, TXT) using Google DNS API, or lookup domain registration dates and registrar ownership details using WHOIS RDAP endpoints.
+- **IP Containment Checker**: Verify if an IP address resides within a given network prefix.
+- **Subnet Comparator**: Compare two subnets side-by-side to detect overlaps, containment, and configurations.
 
-7. **IP Converter**
-   - Convert IP addresses between Dot-Decimal, Binary (32-bit), Hexadecimal, and Decimal/Long Integer formats.
-   - Copy results directly to the clipboard with one tap.
+### 3. Coding & Converters
+- **IP Format Converter**: Dynamic translation between Dot-Decimal, Binary (32-bit), Hexadecimal, and Long Integer decimal representations.
+- **Cisco ACL & Wildcard Generator (New!)**: Generate wildcard masks and Cisco IOS ACL command syntax snippets (Permit/Deny rules) for routers and firewalls.
+- **IPv6 EUI-64 Generator**: Calculate EUI-64 addresses from MAC addresses with detailed step-by-step breakdown.
+- **MAC Vendor Lookup**: Search manufacturer OUIs (Apple, Cisco, Intel, etc.) and convert MAC formats.
+
+### 4. Reference & Learning (Educational)
+- **Interactive Subnetting Quiz**: Interactive exam practice for CCNA and Network+ certifications with streaks, scoreboards, and step-by-step calculations explanation.
+- **Network Cheat Sheets (New!)**: Study cards for the 7-Layer OSI Model, RJ-45 Ethernet Cable wiring standards (T568A vs T568B), IPv4/IPv6 packet header fields, and TIA-598 12-fiber color codes.
+- **CIDR Prefix Cheat Sheet**: Scrollable cheat sheet for /0 to /32 prefixes.
+- **TCP/UDP Common Ports Chart**: Searchable and category-filterable well-known ports directory.
 
 ---
 
 ## Tech Stack
 - **UI Toolkit**: Jetpack Compose
-- **Design System**: Material 3 (Futuristic Deep Space neon theme)
+- **Design System**: Material 3 (Neon Space Cyberpunk Theme)
 - **Language**: Kotlin
 - **Gradle Version**: 9.1.0
 - **Android SDK Target**: API 36 (Android 16)
-- **State Preservation**: Fully rotation-safe via `rememberSaveable`
+- **State Preservation**: Rotation-safe via `rememberSaveable`
+- **Localization**: Localized in 14 major languages (EN, TH, ES, ZH, JA, KO, DE, FR, RU, PT, HI, VI, AR, IT) via a dynamic translation bar.
