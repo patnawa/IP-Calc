@@ -1,6 +1,7 @@
 package com.example.ipcalculator.ui.main
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -79,21 +80,26 @@ fun MainScreen(
             }
         }
     ) { innerPadding ->
-        val screenModifier = Modifier.padding(innerPadding)
-        Crossfade(targetState = selectedTab, label = "tabCrossfade") { tab ->
-            when (tab) {
-                Tab.Subnet -> SubnetCalculatorScreen(modifier = screenModifier)
-                Tab.Vlsm -> VlsmCalculatorScreen(modifier = screenModifier)
-                Tab.Converter -> IpConverterScreen(modifier = screenModifier)
-                Tab.Supernet -> SupernettingScreen(modifier = screenModifier)
-                Tab.CidrChart -> CidrReferenceScreen()
-                Tab.IpChecker -> IpCheckerScreen()
-                Tab.Compare -> SubnetCompareScreen()
-                Tab.Ports -> CommonPortsScreen()
-                Tab.Eui64 -> Eui64Screen()
-                Tab.MacLookup -> MacLookupScreen()
-                Tab.Quiz -> QuizScreen()
-                Tab.About -> AboutScreen(modifier = screenModifier)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            Crossfade(targetState = selectedTab, label = "tabCrossfade") { tab ->
+                when (tab) {
+                    Tab.Subnet -> SubnetCalculatorScreen()
+                    Tab.Vlsm -> VlsmCalculatorScreen()
+                    Tab.Converter -> IpConverterScreen()
+                    Tab.Supernet -> SupernettingScreen()
+                    Tab.CidrChart -> CidrReferenceScreen()
+                    Tab.IpChecker -> IpCheckerScreen()
+                    Tab.Compare -> SubnetCompareScreen()
+                    Tab.Ports -> CommonPortsScreen()
+                    Tab.Eui64 -> Eui64Screen()
+                    Tab.MacLookup -> MacLookupScreen()
+                    Tab.Quiz -> QuizScreen()
+                    Tab.About -> AboutScreen()
+                }
             }
         }
     }
