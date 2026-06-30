@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ipcalculator.IPCalculator
+import com.example.ipcalculator.Translator
 import com.example.ipcalculator.ui.components.ActionButtonRow
 import com.example.ipcalculator.ui.components.GlowingCard
 import com.example.ipcalculator.ui.components.ResultRowWithCopy
@@ -128,7 +129,7 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Base Network Configuration",
+                    text = Translator.t("base_network_config"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -141,7 +142,7 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                     OutlinedTextField(
                         value = baseIp,
                         onValueChange = { baseIp = it },
-                        label = { Text("Base Network IP") },
+                        label = { Text(Translator.t("ip_address")) },
                         placeholder = { Text("e.g. 192.168.1.0") },
                         modifier = Modifier.weight(2f),
                         singleLine = true
@@ -175,7 +176,7 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Subnet Requirements (VLSM)",
+                        text = Translator.t("vlsm"),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -192,7 +193,7 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                                 onValueChange = { newName ->
                                     requirements[index] = req.copy(name = newName)
                                 },
-                                label = { Text("Subnet Name") },
+                                label = { Text(Translator.t("subnet_name")) },
                                 modifier = Modifier.weight(2f),
                                 singleLine = true
                             )
@@ -204,7 +205,7 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                                         requirements[index] = req.copy(hosts = newHosts)
                                     }
                                 },
-                                label = { Text("Hosts Needed") },
+                                label = { Text(Translator.t("hosts_needed")) },
                                 modifier = Modifier.weight(1.5f),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -235,7 +236,7 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                             },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Add Subnet")
+                            Text(Translator.t("add_subnet"))
                         }
 
                         Button(
@@ -245,7 +246,7 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                                 calculationPerformed = true
                                 val prefixInt = basePrefix.toIntOrNull() ?: 24
                                 if (!IPCalculator.isValidIPv4(baseIp.trim())) {
-                                    errorMsg = "Invalid Base IP address."
+                                    errorMsg = Translator.t("error_invalid_ipv4")
                                     return@Button
                                 }
                                 val reqList = requirements.mapNotNull {
@@ -265,7 +266,7 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                             },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Calculate")
+                            Text(Translator.t("calculate"))
                         }
                     }
                 }
@@ -309,7 +310,7 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                             val prefixInt = basePrefix.toIntOrNull() ?: 24
                             val subnetsCount = flsmSubnetsCount.toIntOrNull() ?: 0
                             if (!IPCalculator.isValidIPv4(baseIp.trim())) {
-                                errorMsg = "Invalid Base IP address."
+                                errorMsg = Translator.t("error_invalid_ipv4")
                                 return@Button
                             }
                             if (subnetsCount <= 0) {
@@ -325,7 +326,7 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Calculate FLSM")
+                        Text(Translator.t("calculate"))
                     }
                 }
             }
@@ -354,7 +355,6 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
             if (isVlsm && vlsmResult != null) {
                 val prefixInt = basePrefix.toIntOrNull() ?: 24
                 
-                // Interactive IP Map Visualizer (NEW!)
                 VlsmVisualMap(basePrefix = prefixInt, subnets = vlsmResult!!)
                 
                 Text(
@@ -400,15 +400,14 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                         
                         SectionHeader(title = "Allocation details")
 
-                        ResultRowWithCopy("Subnet IP Address", subnet.subnetAddress)
-                        ResultRowWithCopy("Subnet Mask", subnet.mask)
-                        ResultRowWithCopy("Usable Host Range", "${subnet.rangeStart} - ${subnet.rangeEnd}")
-                        ResultRowWithCopy("Broadcast Address", subnet.broadcast)
-                        ResultRowWithCopy("Usable / Requested Hosts", "${subnet.allocatedHosts} / ${subnet.requestedHosts}")
+                        ResultRowWithCopy(Translator.t("network_address"), subnet.subnetAddress)
+                        ResultRowWithCopy(Translator.t("subnet_mask"), subnet.mask)
+                        ResultRowWithCopy(Translator.t("usable_range"), "${subnet.rangeStart} - ${subnet.rangeEnd}")
+                        ResultRowWithCopy(Translator.t("broadcast_address"), subnet.broadcast)
+                        ResultRowWithCopy(Translator.t("usable_hosts"), "${subnet.allocatedHosts} / ${subnet.requestedHosts}")
                     }
                 }
                 
-                // Copy all / Share row for the entire report
                 ActionButtonRow(allResultsText = shareContent.trim())
                 
             } else if (!isVlsm && flsmResult != null) {
@@ -454,10 +453,10 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                         
                         SectionHeader(title = "Subnet boundary")
 
-                        ResultRowWithCopy("Subnet IP Address", subnet.subnetAddress)
-                        ResultRowWithCopy("Subnet Mask", subnet.mask)
-                        ResultRowWithCopy("Usable Host Range", "${subnet.rangeStart} - ${subnet.rangeEnd}")
-                        ResultRowWithCopy("Broadcast Address", subnet.broadcast)
+                        ResultRowWithCopy(Translator.t("network_address"), subnet.subnetAddress)
+                        ResultRowWithCopy(Translator.t("subnet_mask"), subnet.mask)
+                        ResultRowWithCopy(Translator.t("usable_range"), "${subnet.rangeStart} - ${subnet.rangeEnd}")
+                        ResultRowWithCopy(Translator.t("broadcast_address"), subnet.broadcast)
                     }
                 }
 
@@ -496,7 +495,6 @@ fun VlsmVisualMap(basePrefix: Int, subnets: List<IPCalculator.VlsmSubnet>) {
                 color = MaterialTheme.colorScheme.primary
             )
             
-            // Horizontal Bar representing allocated vs free blocks
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -554,7 +552,7 @@ fun VlsmVisualMap(basePrefix: Int, subnets: List<IPCalculator.VlsmSubnet>) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Utilization: ${"%.1f".format((allocatedSize.toDouble() / totalSize.toDouble()) * 100.0)}%",
+                    text = "${Translator.t("utilization")}: ${"%.1f".format((allocatedSize.toDouble() / totalSize.toDouble()) * 100.0)}%",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary

@@ -13,21 +13,23 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.example.ipcalculator.AppLanguage
+import com.example.ipcalculator.Translator
 import com.example.ipcalculator.ui.screens.*
 
-sealed class Tab(val title: String, val icon: ImageVector) {
-    object Subnet : Tab("Subnet", Icons.Default.Settings)
-    object Vlsm : Tab("VLSM/FLSM", Icons.Default.Add)
-    object Converter : Tab("Converter", Icons.Default.Refresh)
-    object Supernet : Tab("Supernet", Icons.Default.Home)
-    object CidrChart : Tab("CIDR Chart", Icons.Default.List)
-    object IpChecker : Tab("IP Checker", Icons.Default.Check)
-    object Compare : Tab("Compare", Icons.Default.Warning)
-    object Ports : Tab("Ports", Icons.Default.Build)
-    object Eui64 : Tab("EUI-64", Icons.Default.Send)
-    object MacLookup : Tab("MAC OUI", Icons.Default.Search)
-    object Quiz : Tab("Quiz", Icons.Default.Star)
-    object About : Tab("About", Icons.Default.Info)
+sealed class Tab(val key: String, val icon: ImageVector) {
+    object Subnet : Tab("subnet", Icons.Default.Settings)
+    object Vlsm : Tab("vlsm", Icons.Default.Add)
+    object Converter : Tab("converter", Icons.Default.Refresh)
+    object Supernet : Tab("supernet", Icons.Default.Home)
+    object CidrChart : Tab("cidr_chart", Icons.Default.List)
+    object IpChecker : Tab("ip_checker", Icons.Default.Check)
+    object Compare : Tab("compare", Icons.Default.Warning)
+    object Ports : Tab("ports", Icons.Default.Build)
+    object Eui64 : Tab("eui64", Icons.Default.Send)
+    object MacLookup : Tab("mac_oui", Icons.Default.Search)
+    object Quiz : Tab("quiz", Icons.Default.Star)
+    object About : Tab("about", Icons.Default.Info)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,9 +53,12 @@ fun MainScreen(
                 CenterAlignedTopAppBar(
                     title = {
                         Text(
-                            text = "IP Calculator Suite",
+                            text = Translator.t("app_title"),
                             style = MaterialTheme.typography.titleLarge
                         )
+                    },
+                    actions = {
+                        LanguageSelectorDropdown()
                     },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surface,
@@ -72,8 +77,8 @@ fun MainScreen(
                         Tab(
                             selected = selectedTabIndex == index,
                             onClick = { selectedTabIndex = index },
-                            icon = { Icon(imageVector = tab.icon, contentDescription = tab.title) },
-                            text = { Text(tab.title) }
+                            icon = { Icon(imageVector = tab.icon, contentDescription = Translator.t(tab.key)) },
+                            text = { Text(Translator.t(tab.key)) }
                         )
                     }
                 }
@@ -100,6 +105,39 @@ fun MainScreen(
                     Tab.Quiz -> QuizScreen()
                     Tab.About -> AboutScreen()
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun LanguageSelectorDropdown() {
+    var expanded by remember { mutableStateOf(false) }
+    
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            // Using standard search/info icon if language icon is not in core, but since we have extended it's safe.
+            // Let's use Icons.Default.Refresh or similar to be absolutely safe, or Icons.Default.Info.
+            // Let's use Icons.Default.Refresh as it represents "Switch/Translate" nicely, or just look up if Language exists.
+            // Actually, Icons.Default.Refresh is a very safe standard icon. Let's use Refresh or similar if we want.
+            // Wait, does core have Settings or List? Let's use a standard globe or menu icon.
+            // Actually, Icons.Default.Build or Icons.Default.Settings can act as language/options button.
+            // Let's use Icons.Default.Refresh since it represents switching.
+            Icon(imageVector = Icons.Default.Refresh, contentDescription = "Language")
+        }
+        
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            AppLanguage.values().forEach { lang ->
+                DropdownMenuItem(
+                    text = { Text(lang.displayName) },
+                    onClick = {
+                        Translator.currentLanguage = lang
+                        expanded = false
+                    }
+                )
             }
         }
     }

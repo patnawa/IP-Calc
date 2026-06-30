@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ipcalculator.IPCalculator
+import com.example.ipcalculator.Translator
 import com.example.ipcalculator.ui.components.ActionButtonRow
 import com.example.ipcalculator.ui.components.GlowingCard
 import com.example.ipcalculator.ui.components.ResultRowWithCopy
@@ -99,7 +100,7 @@ fun SubnetCalculatorScreen(modifier: Modifier = Modifier) {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = if (isIPv4) "IPv4 Subnet Calculator" else "IPv6 Subnet Calculator",
+                    text = if (isIPv4) "${Translator.t("subnet")} (IPv4)" else "${Translator.t("subnet")} (IPv6)",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -109,7 +110,7 @@ fun SubnetCalculatorScreen(modifier: Modifier = Modifier) {
                     OutlinedTextField(
                         value = ipInput,
                         onValueChange = { ipInput = it },
-                        label = { Text("IP Address") },
+                        label = { Text(Translator.t("ip_address")) },
                         placeholder = { Text("e.g. 192.168.1.1") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
@@ -145,7 +146,7 @@ fun SubnetCalculatorScreen(modifier: Modifier = Modifier) {
                                     prefixInput = cidr.toString()
                                 }
                             },
-                            label = { Text("Subnet Mask") },
+                            label = { Text(Translator.t("subnet_mask")) },
                             modifier = Modifier.weight(2f),
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
@@ -179,7 +180,7 @@ fun SubnetCalculatorScreen(modifier: Modifier = Modifier) {
                     OutlinedTextField(
                         value = ipv6Input,
                         onValueChange = { ipv6Input = it },
-                        label = { Text("IPv6 Address") },
+                        label = { Text(Translator.t("ip_address")) },
                         placeholder = { Text("e.g. 2001:db8::") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
@@ -231,14 +232,14 @@ fun SubnetCalculatorScreen(modifier: Modifier = Modifier) {
                 GlowingCard {
                     SectionHeader(title = "Calculated Subnet Details")
 
-                    ResultRowWithCopy("IP Class", result.ipClass)
-                    ResultRowWithCopy("IP Type", result.ipType)
-                    ResultRowWithCopy("Network Address", "${result.networkAddress}/${result.prefix}")
-                    ResultRowWithCopy("Subnet Mask", result.subnetMask)
-                    ResultRowWithCopy("Wildcard Mask", result.wildcardMask)
-                    ResultRowWithCopy("Broadcast Address", result.broadcastAddress)
-                    ResultRowWithCopy("Usable Host Range", "${result.usableRangeStart} - ${result.usableRangeEnd}")
-                    ResultRowWithCopy("Usable Hosts", "${result.usableHosts} (Total: ${result.totalHosts})")
+                    ResultRowWithCopy(Translator.t("ip_class"), result.ipClass)
+                    ResultRowWithCopy(Translator.t("ip_type"), result.ipType)
+                    ResultRowWithCopy(Translator.t("network_address"), "${result.networkAddress}/${result.prefix}")
+                    ResultRowWithCopy(Translator.t("subnet_mask"), result.subnetMask)
+                    ResultRowWithCopy(Translator.t("wildcard_mask"), result.wildcardMask)
+                    ResultRowWithCopy(Translator.t("broadcast_address"), result.broadcastAddress)
+                    ResultRowWithCopy(Translator.t("usable_range"), "${result.usableRangeStart} - ${result.usableRangeEnd}")
+                    ResultRowWithCopy(Translator.t("usable_hosts"), "${result.usableHosts} (${Translator.t("total_hosts")}: ${result.totalHosts})")
                     
                     val shareText = """
                         IPv4 Subnet Calculation:
@@ -259,16 +260,16 @@ fun SubnetCalculatorScreen(modifier: Modifier = Modifier) {
 
                 // Binary Visualization Card
                 GlowingCard {
-                    SectionHeader(title = "Binary Representation (Network vs Host)")
+                    SectionHeader(title = "Binary Representation")
 
-                    BinaryRow("IP Address", result.ipBinary, result.prefix)
-                    BinaryRow("Subnet Mask", result.maskBinary, result.prefix)
-                    BinaryRow("Network Addr", result.networkBinary, result.prefix)
-                    BinaryRow("Broadcast", result.broadcastBinary, result.prefix)
+                    BinaryRow(Translator.t("ip_address"), result.ipBinary, result.prefix)
+                    BinaryRow(Translator.t("subnet_mask"), result.maskBinary, result.prefix)
+                    BinaryRow(Translator.t("network_address"), result.networkBinary, result.prefix)
+                    BinaryRow(Translator.t("broadcast_address"), result.broadcastBinary, result.prefix)
                 }
             } else {
                 Text(
-                    "Invalid IPv4 Address format.",
+                    Translator.t("error_invalid_ipv4"),
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
@@ -281,13 +282,13 @@ fun SubnetCalculatorScreen(modifier: Modifier = Modifier) {
                 GlowingCard {
                     SectionHeader(title = "Calculated IPv6 Details")
 
-                    ResultRowWithCopy("IP Type", result.type)
+                    ResultRowWithCopy(Translator.t("ip_type"), result.type)
                     ResultRowWithCopy("Compressed IP", result.compressed)
                     ResultRowWithCopy("Expanded IP", result.expanded)
-                    ResultRowWithCopy("Network Address", "${result.networkAddress}/${result.prefix}")
+                    ResultRowWithCopy(Translator.t("network_address"), "${result.networkAddress}/${result.prefix}")
                     ResultRowWithCopy("Range Start", result.rangeStart)
                     ResultRowWithCopy("Range End", result.rangeEnd)
-                    ResultRowWithCopy("Total Hosts", result.totalHosts)
+                    ResultRowWithCopy(Translator.t("total_hosts"), result.totalHosts)
                     
                     val shareText = """
                         IPv6 Subnet Calculation:
@@ -303,7 +304,7 @@ fun SubnetCalculatorScreen(modifier: Modifier = Modifier) {
                 }
             } else {
                 Text(
-                    "Invalid IPv6 Address format.",
+                    Translator.t("error_invalid_ipv6"),
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
@@ -347,8 +348,8 @@ fun BinaryRow(label: String, binaryValue: String, prefix: Int) {
 fun buildColoredBinaryString(binaryStr: String, prefix: Int): AnnotatedString {
     val builder = AnnotatedString.Builder()
     var bitCount = 0
-    val primaryColor = MaterialTheme.colorScheme.primary // Neon Cyan for Network
-    val hostColor = MaterialTheme.colorScheme.tertiary // Bright Pink for Host
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val hostColor = MaterialTheme.colorScheme.tertiary
     val dotColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
     
     for (char in binaryStr) {

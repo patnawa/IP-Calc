@@ -4,6 +4,7 @@ All notable changes to the IP Calculator Suite project will be documented in thi
 
 ## [2.0.0] - 2026-06-30
 ### Added
+- **Global Multi-Language Switcher**: Integrated a dynamic translation engine supporting English, Thai, Spanish, Chinese, Japanese, German, and French, with an instant top app bar dropdown toggler.
 - **Subnetting Quiz**: Interactive training mode for CCNA and Network+ exams with scoreboards, streak trackers, and explanations.
 - **Visual IP Map**: Bar graph visualizer in VLSM displaying allocated subnets and remaining free address space.
 - **IPv6 EUI-64 Generator**: Converts MAC address and network prefix to EUI-64 address with step-by-step logic.
