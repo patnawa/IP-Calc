@@ -55,7 +55,7 @@ fun AboutScreen(modifier: Modifier = Modifier) {
         )
 
         Text(
-            text = "Version 2.0.0 (Build 2)",
+            text = "Version 2.1.0 (Build 3)",
             fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
