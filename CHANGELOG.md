@@ -13,9 +13,10 @@ All notable changes to the IP Calculator Suite project will be documented in thi
 - **IP Subnet Containment Checker**: Verify if a target IP falls inside a subnet range.
 - **Subnet Comparison**: Side-by-side comparative table of two subnets detecting conflicts and containment.
 - **Modern Scrollable Navigation**: Top scrollable tab bar accommodating 12 features with Crossfade animations.
-- **Bright Cute Icon**: New bright, modern, and cute app icon featuring a robot networking character.
+- **Professional Tech Icon**: New professional, sleek, and modern app icon featuring a glowing 3D network node grid.
 
 ### Fixed
+- **Screen Padding**: Wrapped screen layouts inside Scaffold padding Box to prevent the top navigation bar from overlapping or blocking screen content.
 - **IPv6 Compression**: Corrected leading/trailing zero runs :: expansion and compression logic in `IPCalculator.kt`.
 - **IPv6 Validation**: Fixed double-colon count threshold allowing multiple :: sequence errors.
 - **VLSM Overflow**: Enlarged VLSM power-of-two base size calculation from `Int` to `Long` to prevent memory overflow.
