@@ -20,6 +20,12 @@ import com.example.ipcalculator.IPCalculator
 import com.example.ipcalculator.Translator
 import com.example.ipcalculator.ui.components.GlowingCard
 import com.example.ipcalculator.ui.components.SectionHeader
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.platform.LocalContext
+import com.example.ipcalculator.HistoryManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -88,14 +94,74 @@ fun DnsResolverTab() {
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                OutlinedTextField(
-                    value = domainInput,
-                    onValueChange = { domainInput = it },
-                    label = { Text("Domain Name") },
-                    placeholder = { Text("e.g. cloudflare.com") },
+                val context = LocalContext.current
+                var isStarred by remember(domainInput) {
+                    mutableStateOf(HistoryManager.isFavorite(context, domainInput))
+                }
+
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = domainInput,
+                        onValueChange = { domainInput = it },
+                        label = { Text("Domain Name") },
+                        placeholder = { Text("e.g. cloudflare.com") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    IconButton(
+                        onClick = {
+                            HistoryManager.toggleFavorite(context, domainInput)
+                            isStarred = !isStarred
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (isStarred) Icons.Default.Star else Icons.Default.StarBorder,
+                            contentDescription = "Star",
+                            tint = if (isStarred) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // History & Favorites Chips
+                val history = remember(domainInput, isStarred) {
+                    HistoryManager.getHistory(context)
+                }
+                val favorites = remember(domainInput, isStarred) {
+                    HistoryManager.getFavorites(context)
+                }
+
+                if (history.isNotEmpty() || favorites.isNotEmpty()) {
+                    Text(
+                        text = "Quick Access & Favorites",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    androidx.compose.foundation.lazy.LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(favorites) { fav ->
+                            SuggestionChip(
+                                onClick = { domainInput = fav },
+                                label = { Text("⭐ $fav", fontSize = 11.sp) }
+                            )
+                        }
+                        items(history) { hist ->
+                            if (!favorites.contains(hist)) {
+                                SuggestionChip(
+                                    onClick = { domainInput = hist },
+                                    label = { Text(hist, fontSize = 11.sp) }
+                                )
+                            }
+                        }
+                    }
+                }
 
                 @OptIn(ExperimentalMaterial3Api::class)
                 ExposedDropdownMenuBox(
@@ -130,6 +196,8 @@ fun DnsResolverTab() {
                 Button(
                     onClick = {
                         if (domainInput.trim().isEmpty()) return@Button
+                        HistoryManager.addHistory(context, domainInput.trim())
+                        isStarred = HistoryManager.isFavorite(context, domainInput.trim())
                         isQuerying = true
                         queryResult = null
                         errorMsg = null

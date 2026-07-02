@@ -27,6 +27,12 @@ import com.example.ipcalculator.Translator
 import com.example.ipcalculator.theme.ThemeController
 import com.example.ipcalculator.ui.screens.*
 import com.example.ipcalculator.ui.components.GlowingCard
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import com.example.ipcalculator.service.FloatingCalculatorService
 
 sealed class Screen(val key: String, val icon: ImageVector, val category: String) {
     object Subnet : Screen("subnet", Icons.Default.Settings, "cat_design")
@@ -49,6 +55,7 @@ sealed class Screen(val key: String, val icon: ImageVector, val category: String
     object CidrChart : Screen("cidr_chart", Icons.Default.Menu, "cat_learn")
     object Ports : Screen("ports", Icons.Default.Share, "cat_learn")
     object About : Screen("about", Icons.Default.Info, "cat_learn")
+    object Wol : Screen("wol", Icons.Default.FlashOn, "cat_diag")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,10 +65,13 @@ fun MainScreen(
 ) {
     val allScreens = listOf(
         Screen.Subnet, Screen.Vlsm, Screen.Supernet, Screen.DesignWizard,
-        Screen.PingScan, Screen.DnsWhois, Screen.IpChecker, Screen.Compare,
+        Screen.PingScan, Screen.Wol, Screen.DnsWhois, Screen.IpChecker, Screen.Compare,
         Screen.Converter, Screen.Eui64, Screen.MacLookup, Screen.CiscoAcl,
         Screen.Quiz, Screen.CheatSheets, Screen.CidrChart, Screen.Ports, Screen.About
     )
+
+    val context = LocalContext.current
+    var showOverlayPermissionDialog by remember { mutableStateOf(false) }
 
     var activeScreenKey by rememberSaveable { mutableStateOf<String?>(null) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -79,6 +89,33 @@ fun MainScreen(
         BackHandler {
             activeScreenKey = null
         }
+    }
+
+    if (showOverlayPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = { showOverlayPermissionDialog = false },
+            title = { Text("Overlay Permission Required") },
+            text = { Text("To use the Quick Calculator Overlay window, you must allow this app to draw over other apps in the Android system settings.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showOverlayPermissionDialog = false
+                        val intent = Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:${context.packageName}")
+                        )
+                        context.startActivity(intent)
+                    }
+                ) {
+                    Text("Grant Permission")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showOverlayPermissionDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -112,6 +149,22 @@ fun MainScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = {
+                            if (Settings.canDrawOverlays(context)) {
+                                val intent = Intent(context, FloatingCalculatorService::class.java)
+                                context.startService(intent)
+                                Toast.makeText(context, "Quick Calc overlay started. Drag to move, X to close.", Toast.LENGTH_LONG).show()
+                            } else {
+                                showOverlayPermissionDialog = true
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.OpenInNew,
+                            contentDescription = "Open Floating Calculator"
+                        )
+                    }
                     if (activeScreen != null) {
                         IconButton(onClick = { ThemeController.isDarkTheme = !ThemeController.isDarkTheme }) {
                             Icon(
@@ -158,7 +211,11 @@ fun MainScreen(
                         Screen.Vlsm -> VlsmCalculatorScreen()
                         Screen.Supernet -> SupernettingScreen()
                         Screen.DesignWizard -> DesignWizardScreen()
-                        Screen.PingScan -> PingScannerScreen()
+                        Screen.PingScan -> PingScannerScreen(onNavigateToWol = { mac ->
+                            WolScreenState.prefilledMac = mac
+                            activeScreenKey = Screen.Wol.key
+                        })
+                        Screen.Wol -> WolScreen()
                         Screen.DnsWhois -> DnsLookupScreen()
                         Screen.IpChecker -> IpCheckerScreen()
                         Screen.Compare -> SubnetCompareScreen()

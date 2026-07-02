@@ -10,6 +10,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.platform.LocalContext
+import com.example.ipcalculator.HistoryManager
+import com.example.ipcalculator.ui.screens.WolScreenState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -34,7 +41,7 @@ import java.net.InetSocketAddress
 import java.net.Socket
 
 @Composable
-fun PingScannerScreen(modifier: Modifier = Modifier) {
+fun PingScannerScreen(modifier: Modifier = Modifier, onNavigateToWol: (String) -> Unit) {
     var isPingTab by rememberSaveable { mutableStateOf(true) }
     
     Column(
@@ -60,7 +67,7 @@ fun PingScannerScreen(modifier: Modifier = Modifier) {
         if (isPingTab) {
             PingTab()
         } else {
-            ScannerTab()
+            ScannerTab(onNavigateToWol = onNavigateToWol)
         }
     }
 }
@@ -94,14 +101,74 @@ fun PingTab() {
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                OutlinedTextField(
-                    value = hostInput,
-                    onValueChange = { hostInput = it },
-                    label = { Text("Target Hostname or IP") },
-                    placeholder = { Text("e.g. google.com or 8.8.8.8") },
+                val context = LocalContext.current
+                var isStarred by remember(hostInput) {
+                    mutableStateOf(HistoryManager.isFavorite(context, hostInput))
+                }
+
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = hostInput,
+                        onValueChange = { hostInput = it },
+                        label = { Text("Target Hostname or IP") },
+                        placeholder = { Text("e.g. google.com or 8.8.8.8") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    IconButton(
+                        onClick = {
+                            HistoryManager.toggleFavorite(context, hostInput)
+                            isStarred = !isStarred
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (isStarred) Icons.Default.Star else Icons.Default.StarBorder,
+                            contentDescription = "Star",
+                            tint = if (isStarred) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // History & Favorites Chips
+                val history = remember(hostInput, isStarred) {
+                    HistoryManager.getHistory(context)
+                }
+                val favorites = remember(hostInput, isStarred) {
+                    HistoryManager.getFavorites(context)
+                }
+
+                if (history.isNotEmpty() || favorites.isNotEmpty()) {
+                    Text(
+                        text = "Quick Access & Favorites",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    androidx.compose.foundation.lazy.LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(favorites) { fav ->
+                            SuggestionChip(
+                                onClick = { hostInput = fav },
+                                label = { Text("⭐ $fav", fontSize = 11.sp) }
+                            )
+                        }
+                        items(history) { hist ->
+                            if (!favorites.contains(hist)) {
+                                SuggestionChip(
+                                    onClick = { hostInput = hist },
+                                    label = { Text(hist, fontSize = 11.sp) }
+                                )
+                            }
+                        }
+                    }
+                }
 
                 Column {
                     Row(
@@ -126,6 +193,8 @@ fun PingTab() {
                     Button(
                         onClick = {
                             if (hostInput.trim().isEmpty()) return@Button
+                            HistoryManager.addHistory(context, hostInput.trim())
+                            isStarred = HistoryManager.isFavorite(context, hostInput.trim())
                             isPinging = true
                             logs.add("PING ${hostInput.trim()}...")
                             scope.launch {
@@ -179,7 +248,7 @@ fun PingTab() {
 }
 
 @Composable
-fun ScannerTab() {
+fun ScannerTab(onNavigateToWol: (String) -> Unit) {
     var startIp by rememberSaveable { mutableStateOf("192.168.1.1") }
     var endIp by rememberSaveable { mutableStateOf("192.168.1.30") }
     
@@ -333,11 +402,32 @@ fun ScannerTab() {
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp
                         )
-                        Text(
-                            text = "RTT: ${rtt}ms",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "RTT: ${rtt}ms",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            IconButton(
+                                onClick = {
+                                    val ipParts = ip.split(".")
+                                    val estBroadcast = if (ipParts.size == 4) "${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.255" else "255.255.255.255"
+                                    WolScreenState.prefilledMac = ""
+                                    onNavigateToWol(estBroadcast)
+                                },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.FlashOn,
+                                    contentDescription = "Trigger Wake-on-LAN",
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }

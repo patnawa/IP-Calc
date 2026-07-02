@@ -2,6 +2,14 @@ package com.example.ipcalculator
 
 import java.math.BigInteger
 import java.util.Locale
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.net.Uri
+import androidx.core.content.FileProvider
+import java.io.File
+import java.io.FileOutputStream
 
 object IPCalculator {
 
@@ -910,5 +918,187 @@ object IPCalculator {
         } catch (e: Exception) {
             "Error: ${e.message}"
         }
+    }
+
+    fun sendWakeOnLan(macAddress: String, broadcastIp: String, port: Int): String {
+        return try {
+            val cleanMac = macAddress.replace(Regex("[^0-9a-fA-F]"), "")
+            if (cleanMac.length != 12) {
+                return "Error: Invalid MAC address length"
+            }
+            val macBytes = ByteArray(6)
+            for (i in 0..5) {
+                macBytes[i] = cleanMac.substring(i * 2, i * 2 + 2).toInt(16).toByte()
+            }
+            val bytes = ByteArray(6 + 16 * 6)
+            for (i in 0..5) {
+                bytes[i] = 0xff.toByte()
+            }
+            for (i in 1..16) {
+                System.arraycopy(macBytes, 0, bytes, i * 6 + 6, 6)
+            }
+            val address = java.net.InetAddress.getByName(broadcastIp)
+            val packet = java.net.DatagramPacket(bytes, bytes.size, address, port)
+            val socket = java.net.DatagramSocket()
+            socket.broadcast = true
+            socket.send(packet)
+            socket.close()
+            "Success: Magic packet sent to $macAddress via $broadcastIp:$port"
+        } catch (e: Exception) {
+            "Error: ${e.message}"
+        }
+    }
+
+    fun exportVlsmAsImage(context: Context, baseIp: String, basePrefix: Int, subnets: List<VlsmSubnet>): Uri? {
+        val width = 1200
+        val headerHeight = 120
+        val rowHeight = 60
+        val footerHeight = 60
+        val height = headerHeight + subnets.size * rowHeight + footerHeight
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        // Paints
+        val bgPaint = Paint().apply { color = android.graphics.Color.parseColor("#0F172A") }
+        val headerBgPaint = Paint().apply { color = android.graphics.Color.parseColor("#1E293B") }
+        val borderPaint = Paint().apply {
+            color = android.graphics.Color.parseColor("#334155")
+            style = Paint.Style.STROKE
+            strokeWidth = 1f
+        }
+        val textPaint = Paint().apply {
+            color = android.graphics.Color.WHITE
+            textSize = 20f
+            isAntiAlias = true
+        }
+        val titlePaint = Paint().apply {
+            color = android.graphics.Color.parseColor("#22D3EE") // Cyan
+            textSize = 28f
+            isFakeBoldText = true
+            isAntiAlias = true
+        }
+        val subtitlePaint = Paint().apply {
+            color = android.graphics.Color.parseColor("#94A3B8") // Gray
+            textSize = 18f
+            isAntiAlias = true
+        }
+        val accentPaint = Paint().apply {
+            color = android.graphics.Color.parseColor("#A855F7") // Purple
+            textSize = 20f
+            isAntiAlias = true
+        }
+
+        // Draw background
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
+
+        // Draw title & subtitle
+        canvas.drawText("IP Calculator Suite — VLSM Subnet Plan", 40f, 50f, titlePaint)
+        canvas.drawText("Base Network: $baseIp/$basePrefix | Total Subnets: ${subnets.size}", 40f, 85f, subtitlePaint)
+
+        // Draw Table Header
+        canvas.drawRect(0f, headerHeight.toFloat() - 40f, width.toFloat(), headerHeight.toFloat(), headerBgPaint)
+        canvas.drawLine(0f, headerHeight.toFloat() - 40f, width.toFloat(), headerHeight.toFloat() - 40f, borderPaint)
+        canvas.drawLine(0f, headerHeight.toFloat(), width.toFloat(), headerHeight.toFloat(), borderPaint)
+
+        val columns = listOf(
+            Triple("ID", 40f, 60f),
+            Triple("Subnet Name", 100f, 220f),
+            Triple("Req/Alloc Hosts", 320f, 180f),
+            Triple("Network Address", 500f, 200f),
+            Triple("Usable Host Range", 700f, 320f),
+            Triple("Broadcast Address", 1020f, 180f)
+        )
+
+        val headerY = headerHeight.toFloat() - 12f
+        for ((title, x, _) in columns) {
+            canvas.drawText(title, x, headerY, textPaint)
+        }
+
+        // Draw rows
+        var currentY = headerHeight.toFloat() + 40f
+        for (subnet in subnets) {
+            canvas.drawLine(0f, currentY - 30f, width.toFloat(), currentY - 30f, borderPaint)
+            
+            canvas.drawText(subnet.id.toString(), 40f, currentY, subtitlePaint)
+            canvas.drawText(subnet.name, 100f, currentY, accentPaint)
+            canvas.drawText("${subnet.requestedHosts} / ${subnet.allocatedHosts}", 320f, currentY, textPaint)
+            canvas.drawText("${subnet.subnetAddress}/${subnet.prefix}", 500f, currentY, titlePaint)
+            canvas.drawText("${subnet.rangeStart} - ${subnet.rangeEnd}", 700f, currentY, textPaint)
+            canvas.drawText(subnet.broadcast, 1020f, currentY, textPaint)
+
+            currentY += rowHeight
+        }
+
+        // Draw footer
+        canvas.drawLine(0f, height.toFloat() - footerHeight, width.toFloat(), height.toFloat() - footerHeight, borderPaint)
+        canvas.drawText("Generated by IP Calculator Suite", 40f, height.toFloat() - 22f, subtitlePaint)
+
+        // Save bitmap to file in app cache dir and return uri
+        return try {
+            val cachePath = File(context.cacheDir, "exports")
+            cachePath.mkdirs()
+            val file = File(cachePath, "vlsm_subnet_plan_${System.currentTimeMillis()}.png")
+            val stream = FileOutputStream(file)
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            stream.close()
+
+            // Get Uri via FileProvider
+            val authority = "${context.packageName}.fileprovider"
+            FileProvider.getUriForFile(context, authority, file)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+}
+
+object HistoryManager {
+    private const val PREFS_NAME = "network_suite_prefs"
+    private const val KEY_HISTORY = "history_entries"
+    private const val KEY_FAVORITES = "favorites_entries"
+
+    fun getHistory(context: Context): List<String> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val csv = prefs.getString(KEY_HISTORY, "") ?: ""
+        return if (csv.isEmpty()) emptyList() else csv.split(",")
+    }
+
+    fun addHistory(context: Context, entry: String) {
+        val trimmed = entry.trim()
+        if (trimmed.isEmpty()) return
+        val current = getHistory(context).toMutableList()
+        current.remove(trimmed)
+        current.add(0, trimmed)
+        if (current.size > 15) current.removeAt(current.size - 1)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_HISTORY, current.joinToString(","))
+            .apply()
+    }
+
+    fun getFavorites(context: Context): List<String> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val csv = prefs.getString(KEY_FAVORITES, "") ?: ""
+        return if (csv.isEmpty()) emptyList() else csv.split(",")
+    }
+
+    fun isFavorite(context: Context, entry: String): Boolean {
+        return getFavorites(context).contains(entry.trim())
+    }
+
+    fun toggleFavorite(context: Context, entry: String) {
+        val trimmed = entry.trim()
+        if (trimmed.isEmpty()) return
+        val current = getFavorites(context).toMutableList()
+        if (current.contains(trimmed)) {
+            current.remove(trimmed)
+        } else {
+            current.add(trimmed)
+        }
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_FAVORITES, current.joinToString(","))
+            .apply()
     }
 }

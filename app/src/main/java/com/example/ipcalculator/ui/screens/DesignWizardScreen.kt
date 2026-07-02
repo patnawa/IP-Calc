@@ -22,6 +22,11 @@ import com.example.ipcalculator.IPCalculator
 import com.example.ipcalculator.Translator
 import com.example.ipcalculator.ui.components.ActionButtonRow
 import com.example.ipcalculator.ui.components.GlowingCard
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
 import com.example.ipcalculator.ui.components.ResultRowWithCopy
 import com.example.ipcalculator.ui.components.SectionHeader
 
@@ -33,6 +38,7 @@ data class DesignTemplate(
 
 @Composable
 fun DesignWizardScreen(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
     var baseIp by rememberSaveable { mutableStateOf("192.168.0.0") }
     var basePrefix by rememberSaveable { mutableStateOf("23") }
     
@@ -315,7 +321,34 @@ fun DesignWizardScreen(modifier: Modifier = Modifier) {
                     }
                 }
                 
-                ActionButtonRow(allResultsText = shareContent.trim())
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            val uri = IPCalculator.exportVlsmAsImage(context, baseIp, prefixInt, wizardResult!!)
+                            if (uri != null) {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "image/png"
+                                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(android.content.Intent.createChooser(intent, "Share Subnet Plan Image"))
+                            } else {
+                                Toast.makeText(context, "Failed to export plan", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Export Image", fontSize = 13.sp)
+                    }
+                    ActionButtonRow(allResultsText = shareContent.trim())
+                }
             }
         }
     }

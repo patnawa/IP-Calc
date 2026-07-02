@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +24,11 @@ import androidx.compose.ui.unit.sp
 import com.example.ipcalculator.IPCalculator
 import com.example.ipcalculator.Translator
 import com.example.ipcalculator.ui.components.ActionButtonRow
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
 import com.example.ipcalculator.ui.components.GlowingCard
 import com.example.ipcalculator.ui.components.ResultRowWithCopy
 import com.example.ipcalculator.ui.components.SectionHeader
@@ -408,7 +414,34 @@ fun VlsmCalculatorScreen(modifier: Modifier = Modifier) {
                     }
                 }
                 
-                ActionButtonRow(allResultsText = shareContent.trim())
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            val uri = IPCalculator.exportVlsmAsImage(context, baseIp, prefixInt, vlsmResult!!)
+                            if (uri != null) {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "image/png"
+                                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(android.content.Intent.createChooser(intent, "Share Subnet Plan Image"))
+                            } else {
+                                Toast.makeText(context, "Failed to export plan", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Export Image", fontSize = 13.sp)
+                    }
+                    ActionButtonRow(allResultsText = shareContent.trim())
+                }
                 
             } else if (!isVlsm && flsmResult != null) {
                 Text(
@@ -471,14 +504,19 @@ fun VlsmVisualMap(basePrefix: Int, subnets: List<IPCalculator.VlsmSubnet>) {
     val totalSize = 1L shl (32 - basePrefix)
     val allocatedSize = subnets.sumOf { 1L shl (32 - it.prefix) }
     val freeSize = totalSize - allocatedSize
-    
+
     val colors = listOf(
         MaterialTheme.colorScheme.primary,
         MaterialTheme.colorScheme.secondary,
         MaterialTheme.colorScheme.tertiary,
-        MaterialTheme.colorScheme.error
+        MaterialTheme.colorScheme.error,
+        MaterialTheme.colorScheme.primaryContainer,
+        MaterialTheme.colorScheme.secondaryContainer
     )
-    
+
+    var scale by remember { mutableStateOf(1f) }
+    var offsetX by remember { mutableStateOf(0f) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -488,64 +526,123 @@ fun VlsmVisualMap(basePrefix: Int, subnets: List<IPCalculator.VlsmSubnet>) {
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "Interactive IP Allocation Map",
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.primary
-            )
-            
             Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Interactive IP Map (Pinch to Zoom / Drag to Pan)",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Reset",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.clickable {
+                        scale = 1f
+                        offsetX = 0f
+                    }
+                )
+            }
+
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(36.dp)
+                    .height(80.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-            ) {
-                subnets.forEachIndexed { index, subnet ->
-                    val size = 1L shl (32 - subnet.prefix)
-                    val color = colors[index % colors.size]
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(size.toFloat())
-                            .background(color)
-                            .padding(horizontal = 4.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (size >= totalSize / 16) {
-                            Text(
-                                text = "${subnet.name} (/${subnet.prefix})",
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1
-                            )
+                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                    .pointerInput(Unit) {
+                        detectTransformGestures { _, pan, zoom, _ ->
+                            scale = (scale * zoom).coerceIn(1f, 15f)
+                            val maxOffset = (scale - 1f) * size.width
+                            offsetX = (offsetX + pan.x).coerceIn(-maxOffset, 0f)
                         }
                     }
-                }
-                if (freeSize > 0) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(freeSize.toFloat())
-                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-                            .padding(horizontal = 4.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (freeSize >= totalSize / 16) {
-                            Text(
-                                text = "Free ($freeSize)",
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1
+            ) {
+                androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                    val canvasWidth = size.width
+                    val canvasHeight = size.height
+
+                    val gridPaint = android.graphics.Paint().apply {
+                        this.color = android.graphics.Color.WHITE
+                        this.alpha = 25
+                        this.strokeWidth = 1f
+                        this.style = android.graphics.Paint.Style.STROKE
+                    }
+                    val numLines = 10
+                    for (i in 0..numLines) {
+                        val x = (canvasWidth / numLines) * i
+                        drawContext.canvas.nativeCanvas.drawLine(x, 0f, x, canvasHeight, gridPaint)
+                    }
+
+                    var currentX = offsetX
+                    
+                    subnets.forEachIndexed { index, subnet ->
+                        val sizeFraction = (1L shl (32 - subnet.prefix)).toDouble() / totalSize.toDouble()
+                        val blockWidth = (canvasWidth * sizeFraction * scale).toFloat()
+                        
+                        val blockColor = colors[index % colors.size]
+
+                        drawRect(
+                            color = blockColor,
+                            topLeft = androidx.compose.ui.geometry.Offset(currentX, 0f),
+                            size = androidx.compose.ui.geometry.Size(blockWidth - 1f, canvasHeight)
+                        )
+
+                        if (blockWidth > 80f) {
+                            val labelPaint = android.graphics.Paint().apply {
+                                this.color = android.graphics.Color.WHITE
+                                this.textSize = 24f
+                                this.isFakeBoldText = true
+                                this.textAlign = android.graphics.Paint.Align.CENTER
+                                this.isAntiAlias = true
+                            }
+                            val textY = (canvasHeight / 2f) + 8f
+                            val textX = currentX + (blockWidth / 2f)
+                            drawContext.canvas.nativeCanvas.drawText(
+                                "${subnet.name} (/${subnet.prefix})",
+                                textX,
+                                textY,
+                                labelPaint
+                            )
+                        }
+
+                        currentX += blockWidth
+                    }
+
+                    if (freeSize > 0) {
+                        val freeFraction = freeSize.toDouble() / totalSize.toDouble()
+                        val blockWidth = (canvasWidth * freeFraction * scale).toFloat()
+                        
+                        drawRect(
+                            color = androidx.compose.ui.graphics.Color.Gray.copy(alpha = 0.5f),
+                            topLeft = androidx.compose.ui.geometry.Offset(currentX, 0f),
+                            size = androidx.compose.ui.geometry.Size(blockWidth, canvasHeight)
+                        )
+
+                        if (blockWidth > 80f) {
+                            val labelPaint = android.graphics.Paint().apply {
+                                this.color = android.graphics.Color.WHITE
+                                this.textSize = 24f
+                                this.textAlign = android.graphics.Paint.Align.CENTER
+                                this.isAntiAlias = true
+                            }
+                            val textY = (canvasHeight / 2f) + 8f
+                            val textX = currentX + (blockWidth / 2f)
+                            drawContext.canvas.nativeCanvas.drawText(
+                                "Free (${freeSize} IPs)",
+                                textX,
+                                textY,
+                                labelPaint
                             )
                         }
                     }
                 }
             }
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

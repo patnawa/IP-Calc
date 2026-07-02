@@ -2,6 +2,14 @@
 
 All notable changes to the IP Calculator Suite project will be documented in this file.
 
+## [2.2.0] - 2026-07-02
+### Added
+- **Scan History & Favorites**: Integrated persistent saving of target pings and DNS domains with quick-clickable suggestion chips and star toggles.
+- **PDF/Image Exporter**: Rendered subnetting allocations directly to high-quality sharing-ready PNG graphics with a native FileProvider share chooser.
+- **Wake-on-LAN (WOL)**: Broadcast UDP magic packets to wake remote host devices. Linked online sweep results directly to the WOL trigger interface.
+- **Interactive Subnet Map**: Implemented high-performance pan/zoom gestures on an allocation map Canvas representing network sizing blocks.
+- **Quick Calculator Overlay**: Draggable picture-in-picture floating Compose overlay window with dynamic keyboard focus management.
+
 ## [2.1.0] - 2026-06-30
 ### Added
 - **Searchable Dashboard Grid**: Replaced the horizontal tabs navigation with a modern categorized launcher dashboard with dynamic search filtering.

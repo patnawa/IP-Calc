@@ -49,6 +49,13 @@ object Translator {
             AppLanguage.PT to "Cisco ACL", AppLanguage.HI to "सिस्को ACL", AppLanguage.VI to "Cisco ACL",
             AppLanguage.AR to "Cisco ACL", AppLanguage.IT to "Cisco ACL"
         ),
+        "wol" to mapOf(
+            AppLanguage.EN to "Wake-on-LAN", AppLanguage.TH to "เปิดเครื่องระยะไกล (WOL)", AppLanguage.ES to "Wake-on-LAN",
+            AppLanguage.ZH to "网络唤醒 (WOL)", AppLanguage.JA to "Wake-on-LAN", AppLanguage.KO to "Wake-on-LAN",
+            AppLanguage.DE to "Wake-on-LAN", AppLanguage.FR to "Wake-on-LAN", AppLanguage.RU to "Wake-on-LAN",
+            AppLanguage.PT to "Wake-on-LAN", AppLanguage.HI to "वेक-ऑन-लैन", AppLanguage.VI to "Wake-on-LAN",
+            AppLanguage.AR to "Wake-on-LAN", AppLanguage.IT to "Wake-on-LAN"
+        ),
         "ping_scan" to mapOf(
             AppLanguage.EN to "Ping & Scanner", AppLanguage.TH to "ปิงและสแกนเนอร์", AppLanguage.ES to "Ping y Escáner",
             AppLanguage.ZH to "Ping 和扫描仪", AppLanguage.JA to "Pingとスキャナー", AppLanguage.KO to "핑 및 스캐너",
