@@ -33,22 +33,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run unit tests
-        continue-on-error: true
-        run: |
-          ./gradlew testDebugUnitTest --info 2>&1 | tee test-output.log || true
-
-      - name: Dump test failures
-        run: |
-          echo "=== TEST OUTPUT (last 200 lines) ==="
-          tail -200 test-output.log
-          echo ""
-          echo "=== TEST XML REPORTS ==="
-          for f in app/build/test-results/testDebugUnitTest/*.xml; do
-            if grep -q 'failures="[^0]' "$f" 2>/dev/null || grep -q 'errors="[^0]' "$f" 2>/dev/null; then
-              echo "--- $f ---"
-              grep -A5 '<testcase' "$f" | grep -E '(testcase|failure)' | head -30
-            fi
-          done
+        run: ./gradlew testDebugUnitTest
 
       - name: Build debug APK
         run: ./gradlew assembleDebug
