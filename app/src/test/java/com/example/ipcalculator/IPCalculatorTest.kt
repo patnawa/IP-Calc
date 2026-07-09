@@ -1,9 +1,10 @@
 package com.example.ipcalculator
 
-import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertNotNull
-import junit.framework.TestCase.assertNull
-import junit.framework.TestCase.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class IPCalculatorTest {
@@ -21,15 +22,15 @@ class IPCalculatorTest {
 
     @Test
     fun isValidIPv4_rejectsInvalidOctets() {
-        assertTrue(!IPCalculator.isValidIPv4("256.0.0.1"))
-        assertTrue(!IPCalculator.isValidIPv4("192.168.1"))
-        assertTrue(!IPCalculator.isValidIPv4("192.168.1.1.1"))
-        assertTrue(!IPCalculator.isValidIPv4("abc.def.ghi.jkl"))
+        assertFalse(IPCalculator.isValidIPv4("256.0.0.1"))
+        assertFalse(IPCalculator.isValidIPv4("192.168.1"))
+        assertFalse(IPCalculator.isValidIPv4("192.168.1.1.1"))
+        assertFalse(IPCalculator.isValidIPv4("abc.def.ghi.jkl"))
     }
 
     @Test
     fun isValidIPv4_rejectsLeadingZeros() {
-        assertTrue(!IPCalculator.isValidIPv4("192.168.001.1"))
+        assertFalse(IPCalculator.isValidIPv4("192.168.001.1"))
     }
 
     // --- IPv4 Calculation ---
@@ -127,8 +128,8 @@ class IPCalculatorTest {
 
     @Test
     fun isIpInSubnet_negative() {
-        assertTrue(!IPCalculator.isIpInSubnet("192.168.2.1", "192.168.1.0", 24))
-        assertTrue(!IPCalculator.isIpInSubnet("11.0.0.1", "10.0.0.0", 8))
+        assertFalse(IPCalculator.isIpInSubnet("192.168.2.1", "192.168.1.0", 24))
+        assertFalse(IPCalculator.isIpInSubnet("11.0.0.1", "10.0.0.0", 8))
     }
 
     // --- Subnet Comparison ---
@@ -139,7 +140,7 @@ class IPCalculatorTest {
         assertNotNull(result)
         result!!
         assertTrue(result.overlaps)
-        assertTrue(!result.aContainsB)
+        assertFalse(result.aContainsB)
         assertTrue(result.bContainsA)
     }
 
@@ -148,7 +149,7 @@ class IPCalculatorTest {
         val result = IPCalculator.compareSubnets("192.168.1.0", 24, "10.0.0.0", 8)
         assertNotNull(result)
         result!!
-        assertTrue(!result.overlaps)
+        assertFalse(result.overlaps)
     }
 
     // --- CIDR Reference Table ---
@@ -248,8 +249,8 @@ class IPCalculatorTest {
 
     @Test
     fun isValidIPv6_rejectsInvalid() {
-        assertTrue(!IPCalculator.isValidIPv6("2001:db8:::1"))  // triple colon
-        assertTrue(!IPCalculator.isValidIPv6("gggg::1"))       // invalid hex
+        assertFalse(IPCalculator.isValidIPv6("2001:db8:::1"))  // triple colon
+        assertFalse(IPCalculator.isValidIPv6("gggg::1"))       // invalid hex
     }
 
     // --- IPv6 Calculation ---
