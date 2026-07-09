@@ -2,6 +2,11 @@
 
 All notable changes to the IP Calculator Suite project will be documented in this file.
 
+## [2.2.2] - 2026-07-09
+### Fixed
+- **Binary Converter**: Enforced automatic dotted-octet formatting for flat 32-bit binary strings inside `IpConverterScreen.kt` before validation, fixing a bug where binary inputs without dots were rejected.
+- **Test Suite**: Restored the comprehensive test suite in `IPCalculatorTest.kt` to cover all core IP calculation functions, formatting tools, and generator modules.
+
 ## [2.2.1] - 2026-07-09
 ### Fixed
 - **OUI Registry**: Replaced invalid hex entry `0024H4` (Samsung) with correct `0024A4` — previously never matched.

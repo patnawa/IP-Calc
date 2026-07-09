@@ -349,6 +349,10 @@ object IPCalculator {
     fun isValidIPv6(ip: String): Boolean {
         val cleaned = ip.trim()
         if (cleaned.isEmpty()) return false
+        if (cleaned.contains(":::")) return false
+        if (cleaned.startsWith(":") && !cleaned.startsWith("::")) return false
+        if (cleaned.endsWith(":") && !cleaned.endsWith("::")) return false
+
         // Only one :: allowed
         val doubleColonOccurrences = Regex("::").findAll(cleaned).count()
         if (doubleColonOccurrences > 1) return false

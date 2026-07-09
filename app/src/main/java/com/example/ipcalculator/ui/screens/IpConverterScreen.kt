@@ -61,7 +61,12 @@ fun IpConverterScreen(modifier: Modifier = Modifier) {
             }
             IpFormat.BINARY -> {
                 val cleanedBin = trimmedInput.replace(".", "")
-                val ipStr = IPCalculator.binaryToIPv4(cleanedBin)
+                val formattedBin = if (cleanedBin.length == 32) {
+                    (0..3).joinToString(".") { cleanedBin.substring(it * 8, it * 8 + 8) }
+                } else {
+                    trimmedInput
+                }
+                val ipStr = IPCalculator.binaryToIPv4(formattedBin)
                 if (ipStr != null) {
                     val lVal = IPCalculator.ipv4ToLong(ipStr)
                     dotDecimalOut = ipStr
