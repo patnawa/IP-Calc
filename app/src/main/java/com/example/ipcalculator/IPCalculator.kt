@@ -556,9 +556,13 @@ object IPCalculator {
     }
 
     fun binaryToIPv4(binStr: String): String? {
-        val cleaned = binStr.replace(".", "").trim()
-        if (cleaned.length != 32 || !cleaned.all { it == '0' || it == '1' }) return null
-        return try { longToIPv4(cleaned.toLong(2)) } catch (_: Exception) { null }
+        // Require well-formed dotted-octet format: 00000000.00000000.00000000.00000000
+        val cleaned = binStr.trim()
+        val parts = cleaned.split(".")
+        if (parts.size != 4) return null
+        if (parts.any { it.length != 8 || !it.all { c -> c == '0' || c == '1' } }) return null
+        val flat = parts.joinToString("")
+        return try { longToIPv4(flat.toLong(2)) } catch (_: Exception) { null }
     }
 
     // --- SUPERNETTING / ROUTE SUMMARIZATION ---
@@ -613,7 +617,8 @@ object IPCalculator {
 
     fun generateQuizQuestion(): QuizQuestion {
         val random = java.util.Random()
-        val prefix = random.nextInt(23) + 8 // /8 to /30
+        // /8 to /29 (avoid /30, /31, /32 where usable-host edge cases cause ambiguous options)
+        val prefix = random.nextInt(22) + 8 // /8 to /29
         val ipParts = List(4) { if (it == 0) random.nextInt(223) + 1 else random.nextInt(256) }
         val ipStr = ipParts.joinToString(".")
         
@@ -768,7 +773,7 @@ object IPCalculator {
             "001F29" to "HP",
             "002170" to "Dell",
             "002241" to "Intel",
-            "0024H4" to "Samsung",
+            "0024A4" to "Samsung",
             "002590" to "Super Micro",
             "0026BB" to "Apple",
             "005056" to "VMware",
@@ -1057,11 +1062,21 @@ object HistoryManager {
     private const val PREFS_NAME = "network_suite_prefs"
     private const val KEY_HISTORY = "history_entries"
     private const val KEY_FAVORITES = "favorites_entries"
+    private const val SEPARATOR = "\u001F" // Unit Separator — safe delimiter since hostnames/IPs never contain it
+
+    private fun splitSafe(csv: String): List<String> {
+        if (csv.isEmpty()) return emptyList()
+        return csv.split(SEPARATOR)
+    }
+
+    private fun joinSafe(list: List<String>): String {
+        return list.joinToString(SEPARATOR)
+    }
 
     fun getHistory(context: Context): List<String> {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val csv = prefs.getString(KEY_HISTORY, "") ?: ""
-        return if (csv.isEmpty()) emptyList() else csv.split(",")
+        return splitSafe(csv)
     }
 
     fun addHistory(context: Context, entry: String) {
@@ -1073,14 +1088,14 @@ object HistoryManager {
         if (current.size > 15) current.removeAt(current.size - 1)
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
-            .putString(KEY_HISTORY, current.joinToString(","))
+            .putString(KEY_HISTORY, joinSafe(current))
             .apply()
     }
 
     fun getFavorites(context: Context): List<String> {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val csv = prefs.getString(KEY_FAVORITES, "") ?: ""
-        return if (csv.isEmpty()) emptyList() else csv.split(",")
+        return splitSafe(csv)
     }
 
     fun isFavorite(context: Context, entry: String): Boolean {
@@ -1098,7 +1113,7 @@ object HistoryManager {
         }
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
-            .putString(KEY_FAVORITES, current.joinToString(","))
+            .putString(KEY_FAVORITES, joinSafe(current))
             .apply()
     }
 }

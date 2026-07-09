@@ -100,21 +100,28 @@ fun SupernettingScreen(modifier: Modifier = Modifier) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedButton(
-                        onClick = {
-                            val lastSubnet = subnets.lastOrNull() ?: "192.168.0.0/24"
-                            val parts = lastSubnet.split("/")
-                            val ip = parts.getOrNull(0) ?: "192.168.0.0"
-                            val prefix = parts.getOrNull(1) ?: "24"
-                            val ipParts = ip.split(".")
-                            if (ipParts.size == 4) {
-                                val third = ipParts[2].toIntOrNull() ?: 0
-                                val nextSub = "${ipParts[0]}.${ipParts[1]}.${third + 1}.0/$prefix"
-                                subnets.add(nextSub)
-                            } else {
-                                subnets.add("192.168.0.0/24")
-                            }
-                            calculationPerformed = false
-                        },
+                                            onClick = {
+                                                val lastSubnet = subnets.lastOrNull() ?: "192.168.0.0/24"
+                                                val parts = lastSubnet.split("/")
+                                                val ip = parts.getOrNull(0) ?: "192.168.0.0"
+                                                val prefix = parts.getOrNull(1) ?: "24"
+                                                val ipParts = ip.split(".")
+                                                if (ipParts.size == 4) {
+                                                    val third = ipParts[2].toIntOrNull() ?: 0
+                                                    if (third in 0..254) {
+                                                        val nextSub = "${ipParts[0]}.${ipParts[1]}.${third + 1}.0/$prefix"
+                                                        subnets.add(nextSub)
+                                                    } else {
+                                                        // Wrap around to next second-octet
+                                                        val second = ipParts[1].toIntOrNull() ?: 0
+                                                        val nextSub = "${ipParts[0]}.${if (second < 255) second + 1 else 0}.0.0/$prefix"
+                                                        subnets.add(nextSub)
+                                                    }
+                                                } else {
+                                                    subnets.add("192.168.0.0/24")
+                                                }
+                                                calculationPerformed = false
+                                            },
                         modifier = Modifier.weight(1f)
                     ) {
                         Text("Add Subnet")

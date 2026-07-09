@@ -1,5 +1,6 @@
 package com.example.ipcalculator.theme
 
+import android.content.Context
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -47,7 +48,26 @@ private val LightColorScheme = lightColorScheme(
 )
 
 object ThemeController {
+    private const val PREFS_NAME = "theme_prefs"
+    private const val KEY_DARK = "is_dark_theme"
+    private var _initialized = false
+
     var isDarkTheme by mutableStateOf(true)
+
+    fun init(context: Context) {
+        if (_initialized) return
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        isDarkTheme = prefs.getBoolean(KEY_DARK, true)
+        _initialized = true
+    }
+
+    fun toggle(context: Context) {
+        isDarkTheme = !isDarkTheme
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_DARK, isDarkTheme)
+            .apply()
+    }
 }
 
 @Composable

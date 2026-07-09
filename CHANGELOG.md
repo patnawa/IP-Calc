@@ -2,6 +2,17 @@
 
 All notable changes to the IP Calculator Suite project will be documented in this file.
 
+## [2.2.1] - 2026-07-09
+### Fixed
+- **OUI Registry**: Replaced invalid hex entry `0024H4` (Samsung) with correct `0024A4` — previously never matched.
+- **Quiz Generator**: Restricted prefix range to /8–/29 to prevent duplicate/ambiguous answer options at /30, /31, and /32 prefixes.
+- **Binary Converter**: Enforced strict dotted-octet format (8 bits per octet × 4) in `binaryToIPv4()`; previously accepted arbitrarily dotted input.
+- **Supernetting "Add Subnet"**: Prevented invalid IP generation when the third octet overflowed past 255; now wraps octets safely.
+- **Scanner → WOL Navigation**: Scanner sweep now pre-fills the broadcast IP on the WOL screen instead of doing nothing with it.
+- **Theme Persistence**: User's light/dark theme preference is now saved to SharedPreferences and restored on next app launch.
+- **History/Favorites Storage**: Replaced comma delimiter with ASCII Unit Separator (`\u001F`) to prevent corruption from entries containing commas.
+- **Test Suite**: Replaced non-compiling scaffold test with a comprehensive `IPCalculatorTest` covering IPv4/IPv6 calculation, VLSM/FLSM, supernetting, quiz generation, MAC formatting, and more.
+
 ## [2.2.0] - 2026-07-02
 ### Added
 - **Scan History & Favorites**: Integrated persistent saving of target pings and DNS domains with quick-clickable suggestion chips and star toggles.

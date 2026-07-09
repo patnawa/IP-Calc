@@ -51,7 +51,15 @@ fun WolScreen() {
             } else ""
         )
     }
-    var broadcastIp by rememberSaveable { mutableStateOf("255.255.255.255") }
+    var broadcastIp by rememberSaveable {
+        mutableStateOf(
+            if (WolScreenState.prefilledBroadcast.isNotEmpty()) {
+                val bc = WolScreenState.prefilledBroadcast
+                WolScreenState.prefilledBroadcast = ""
+                bc
+            } else "255.255.255.255"
+        )
+    }
     var portString by rememberSaveable { mutableStateOf("9") }
     var resultLog by rememberSaveable { mutableStateOf<String?>(null) }
     var isSending by remember { mutableStateOf(false) }
@@ -226,4 +234,5 @@ fun WolScreen() {
 
 object WolScreenState {
     var prefilledMac = ""
+    var prefilledBroadcast = ""
 }

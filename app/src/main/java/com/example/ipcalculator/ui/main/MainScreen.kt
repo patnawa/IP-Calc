@@ -140,7 +140,7 @@ fun MainScreen(
                             )
                         }
                     } else {
-                        IconButton(onClick = { ThemeController.isDarkTheme = !ThemeController.isDarkTheme }) {
+                        IconButton(onClick = { ThemeController.toggle(context) }) {
                             Icon(
                                 imageVector = if (ThemeController.isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
                                 contentDescription = "Toggle Theme"
@@ -166,7 +166,7 @@ fun MainScreen(
                         )
                     }
                     if (activeScreen != null) {
-                        IconButton(onClick = { ThemeController.isDarkTheme = !ThemeController.isDarkTheme }) {
+                        IconButton(onClick = { ThemeController.toggle(context) }) {
                             Icon(
                                 imageVector = if (ThemeController.isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
                                 contentDescription = "Toggle Theme"

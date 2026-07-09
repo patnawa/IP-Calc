@@ -412,12 +412,12 @@ fun ScannerTab(onNavigateToWol: (String) -> Unit) {
                                 color = MaterialTheme.colorScheme.primary
                             )
                             IconButton(
-                                onClick = {
-                                    val ipParts = ip.split(".")
-                                    val estBroadcast = if (ipParts.size == 4) "${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.255" else "255.255.255.255"
-                                    WolScreenState.prefilledMac = ""
-                                    onNavigateToWol(estBroadcast)
-                                },
+                                                            onClick = {
+                                                                val ipParts = ip.split(".")
+                                                                val estBroadcast = if (ipParts.size == 4) "${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.255" else "255.255.255.255"
+                                                                WolScreenState.prefilledBroadcast = estBroadcast
+                                                                onNavigateToWol("")
+                                                            },
                                 modifier = Modifier.size(28.dp)
                             ) {
                                 Icon(
